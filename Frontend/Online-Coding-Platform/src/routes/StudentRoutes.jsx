@@ -10,7 +10,7 @@ import QuestionBank from "../components/common/QuestionBank";
 import CodingInterface from "../components/editor/CodingInterface";
 import TestAttempt from "../components/student/TestAttempt";
 import TestLayout from "../layouts/TestLayout";
-
+import AuthPage from "../security/login";
 // import Tests from '../pages/student/Tests';
 // import Results from '../pages/student/Results';
 // import History from '../pages/student/History';
@@ -28,6 +28,7 @@ const StudentRoutes = () => {
     <Routes>
       <Route element={<StudentLayout />}>
         <Route index element={<Dashboard />} />
+       
         <Route path="tests" element={<MyTests />} />
         <Route path="results" element={<UpcomingTests />} />
         <Route path="tests/:testId" element={<TestDetail />} />

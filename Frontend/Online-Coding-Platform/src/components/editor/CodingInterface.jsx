@@ -5,11 +5,16 @@ import Editor from "@monaco-editor/react";
 import { runCode } from "../../api/piston";
 import { FindQuestionById } from "../../api/question";
 import { FindTestCase } from "../../api/Testcase";
+import { addSubmission } from "../../api/submission";
+import { useMainContext } from "../../context/AuthContext";
+import SecurityBlocker from "../../security/SecurityBlocker";
 
 const CodingInterface = () => {
   const { testId, problemId } = useParams();
   const navigate = useNavigate();
 
+    const { final, setFinal } = useMainContext();
+  
   const defaultCode = {
     python: `# Write your Python code here
 def main():
@@ -39,9 +44,9 @@ int main() {
   const [output, setOutput] = useState("");
   const [combined, setCombined] = useState({});
   const editorRef = useRef(null); 
-  const [final,setFinal] = useState({});
 
 // assumes: const [final, setFinal] = useState({});
+const LoggedUser = JSON.parse(localStorage.getItem("user"));
 
 function compareMultiLineOutputs(userOutput, expectedOutput) {
   const userLines = userOutput.trim().split("\n").map(s => s.trim());
@@ -63,16 +68,15 @@ function compareMultiLineOutputs(userOutput, expectedOutput) {
     }
   }
 
-  const failedCount = expectedLines.length - passedCount;
+  // FIX: update score for this problemId
+  updateScore(problemId, passedCount, expectedLines.length - passedCount);
 
-  // update first...
-  updateScore(problemId, passedCount, failedCount);
-
-  // ...then, if you want to see the NEW state, use useEffect (below), not this:
-  // console.log(final); // <-- this will be stale
 
   return passedCount;
 }
+
+
+
 
 function updateScore(qid, passedCount, failedCount) {
   setFinal(prev => {
@@ -81,8 +85,6 @@ function updateScore(qid, passedCount, failedCount) {
       ...prev,
       [key]: {
         ...(prev[key] ?? {}),
-        passed: passedCount,
-        failed: failedCount,
         score: passedCount * 10,
       },
     };
@@ -187,6 +189,7 @@ const handleRunCode = async () => {
 
   return (
     <div className="flex flex-col h-screen bg-slate-900 text-white">
+      <SecurityBlocker/>
       <header className="flex-shrink-0 p-3 border-b border-slate-700 flex justify-between items-center">
         <button
           onClick={() => navigate(-1)}

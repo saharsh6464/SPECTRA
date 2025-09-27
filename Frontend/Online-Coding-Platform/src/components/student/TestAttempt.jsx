@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FaListOl, FaCheckCircle, FaCode, FaHourglassHalf } from 'react-icons/fa';
 import { useMainContext } from '../../context/AuthContext';
+import { addSubmission } from '../../api/submission';
 
 const TestAttempt = () => {
   const { testId } = useParams();
   const navigate = useNavigate();
-  const { currentQuestion } = useMainContext(); 
+  const { currentQuestion ,final} = useMainContext(); 
 
   // If context is empty, fallback to empty array
   const problems = currentQuestion || [];
@@ -25,6 +26,30 @@ const TestAttempt = () => {
     }
     return statuses;
   };
+
+  
+  function HandleFinalSubmit() {
+    const LoggedUser = JSON.parse(localStorage.getItem("user")); 
+    if (!LoggedUser) {
+      console.error("No logged-in user found");
+      return;
+    }
+  
+    // ✅ Calculate total score by summing all scores in final
+    const totalScore = Object.values(final).reduce((sum, item) => sum + (item.score || 0), 0);
+  
+    // ✅ Build payload
+    const payload = {
+      username: LoggedUser.username,
+      test: {
+        testId,// make sure you have testId in scope
+      },
+      totalScore: totalScore,
+    };
+    const response = addSubmission(payload);
+    
+    console.log("📦 Final Output from Backend:", response); 
+  }
 
   const [problemStatuses, setProblemStatuses] = useState(() => getInitialStatuses(problems));
 
@@ -95,10 +120,14 @@ const TestAttempt = () => {
         <div>
           <h1 className="text-xl font-bold text-white">Test in Progress</h1>
           <p className="text-sm text-slate-400">Attempting Test ID: {testId}</p>
+          {/* Show User ID and Test ID */}
+          <p className="text-xs text-slate-400 mt-1">
+            User ID: {JSON.parse(localStorage.getItem("user"))?.username || "N/A"} | Test ID: {testId}
+          </p>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-lg font-mono bg-slate-700 text-white py-1.5 px-3 rounded-lg">{formatTime(timeLeft)}</span>
-          <button className="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-1.5 px-4 rounded-lg text-sm">
+          <button onClick={HandleFinalSubmit} className="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-1.5 px-4 rounded-lg text-sm">
             Finish & Submit Test
           </button>
         </div>
