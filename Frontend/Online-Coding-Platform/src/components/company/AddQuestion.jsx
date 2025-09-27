@@ -4,7 +4,6 @@ import { useMainContext } from "../../context/AuthContext";
 import { PostData } from "../../api/question";
 import { putTestcase } from "../../api/Testcase";
 
-
 const AddQuestion = ({ onClose }) => {
   const { currentQuestion, setcurrentQuestion } = useMainContext();
 
@@ -13,12 +12,14 @@ const AddQuestion = ({ onClose }) => {
   const [difficulty, setDifficulty] = useState("easy");
   const [TestCaseInputFile, setTestCaseInputFile] = useState("");
   const [sample_test_cases, setSampleInputTestCases] = useState("");
-  const[input_format,setinputformat] = useState([]);
+  const [sampleOutputFile, setsampleOutputFile] = useState("");
+  const [input_format, setinputformat] = useState([]);
   const [popupMessage, setPopupMessage] = useState("");
   const [popupType, setPopupType] = useState(""); // success or error
-  const[output_format,setoutputFormat] = useState("");
-  const[TimeComplexity,setTimeComplexity] = useState("");
-  const[SpaceComplexity,setSpaceComplexity] = useState("");
+  const [output_format, setoutputFormat] = useState("");
+  const [TimeComplexity, setTimeComplexity] = useState("");
+  const[RefrenceOutput,SetRefrenceOutput] = useState("")
+  const [SpaceComplexity, setSpaceComplexity] = useState("");
 
   const SendData = async () => {
     const QuestionData = await PostData(questionData);
@@ -33,7 +34,7 @@ const AddQuestion = ({ onClose }) => {
         description,
         difficulty,
         TimeComplexity,
-        SpaceComplexity
+        SpaceComplexity,
       };
 
       const QuestionResponse = await PostData(questionPayload);
@@ -49,6 +50,8 @@ const AddQuestion = ({ onClose }) => {
         isSample: sample_test_cases,
         inputFormat: input_format,
         outputFormat: output_format,
+        outputFile: sampleOutputFile,
+        sampleOutputfile:RefrenceOutput,// ✅ use camelCase
       };
 
       console.log("before sending data", testCasePayload);
@@ -74,7 +77,7 @@ const AddQuestion = ({ onClose }) => {
       }, 3000);
     }
 
-    console.log("Testcase Data", finaltestCaseData);
+    // console.log("Testcase Data", finaltestCaseData);
   };
 
   const Popup = ({ message, type }) => {
@@ -127,8 +130,8 @@ const AddQuestion = ({ onClose }) => {
               required
             ></textarea>
           </div>
-            {/* TimeComplexity */}
-            <div>
+          {/* TimeComplexity */}
+          <div>
             <label className="block text-sm font-medium text-slate-300 mb-1">
               TimeComplexity
             </label>
@@ -141,8 +144,8 @@ const AddQuestion = ({ onClose }) => {
             />
           </div>
 
-            {/* SpaceComplexity */}
-            <div>
+          {/* SpaceComplexity */}
+          <div>
             <label className="block text-sm font-medium text-slate-300 mb-1">
               SpaceComplexity
             </label>
@@ -177,34 +180,33 @@ const AddQuestion = ({ onClose }) => {
               Test Cases
             </h3>
             <div className="space-y-4">
-            {/* Input Case Input Format*/}
-               <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Test Case Input format
-            </label>
-            <textarea
-              rows="4"
-              value={input_format}
-              onChange={(e) => setinputformat(e.target.value)}
-              className="w-full py-2 px-3 rounded-lg bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
-            ></textarea>
-          </div>
+              {/* Input Case Input Format*/}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Test Case Input format
+                </label>
+                <textarea
+                  rows="4"
+                  value={input_format}
+                  onChange={(e) => setinputformat(e.target.value)}
+                  className="w-full py-2 px-3 rounded-lg bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                ></textarea>
+              </div>
 
-           {/*Output text Format*/}
-               <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1">
-              Test Case Output format
-            </label>
-            <textarea
-              rows="4"
-              value={output_format}
-              onChange={(e) => setoutputFormat(e.target.value)}
-              className="w-full py-2 px-3 rounded-lg bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
-            ></textarea>
-          </div>
-
+              {/*Output text Format*/}
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Test Case Output format
+                </label>
+                <textarea
+                  rows="4"
+                  value={output_format}
+                  onChange={(e) => setoutputFormat(e.target.value)}
+                  className="w-full py-2 px-3 rounded-lg bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  required
+                ></textarea>
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">
@@ -221,7 +223,7 @@ const AddQuestion = ({ onClose }) => {
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Sample Testcase InputFile
+                  Sample Testcase InputFile For Refrence
                 </label>
                 <textarea
                   rows="4"
@@ -231,6 +233,32 @@ const AddQuestion = ({ onClose }) => {
                   required
                 ></textarea>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Testcase Outputfile
+                </label>
+                <textarea
+                rows="4"
+                value={sampleOutputFile}
+                onChange={(e) => setsampleOutputFile(e.target.value)}
+                className="w-full py-2 px-3 rounded-lg bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              ></textarea>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                 Refrence Testcase Outputfile
+                </label>
+                <textarea
+                rows="4"
+                value={RefrenceOutput}
+                onChange={(e) => SetRefrenceOutput(e.target.value)}
+                className="w-full py-2 px-3 rounded-lg bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                required
+              ></textarea>
+              </div>
+           
             </div>
           </div>
         </form>
