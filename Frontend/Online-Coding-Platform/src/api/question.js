@@ -1,36 +1,32 @@
 import axiosInstance from "./axiosSetup";
 
-export const getQuestions= async () =>{
-    try{
+export const getQuestions = async () => {
+    try {
         const response = await axiosInstance.get('questions');
-        console.log(response.data);
         return response.data;
-    }
-    catch(e){
-        console.log("Error Occurredd",e);
+    } catch (e) {
+        console.error("Error occurred while fetching questions:", e);
         throw e;
     }
-}
-
+};
 
 export const PostData = async (data) => {
     try {
-        const response = await axiosInstance.post('questions',data);
-        console.log("Data Submitted from Api component",response);
+        const response = await axiosInstance.post('questions', data);
+        console.log("Question Submitted Successfully:", response.data);
         return response.data;
-    }catch(e){
-        console.log("Error Occured In Question compoenet",e);
+    } catch (e) {
+        console.error("Error occurred while submitting question:", e);
         throw e;
     }
-}
+};
 
-export const FindQuestionById = async(id) =>{
-    try{
+export const FindQuestionById = async (id) => {
+    try {
         const response = await axiosInstance.get(`questions/${id}`);
         return response.data;
-    }
-    catch(e){
-        console.log("Error in fetching Data BY id",e);
+    } catch (e) {
+        console.error(`Error occurred while fetching question with id ${id}:`, e);
         throw e;
     }
-}
+};

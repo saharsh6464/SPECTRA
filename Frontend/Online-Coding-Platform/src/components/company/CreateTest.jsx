@@ -13,22 +13,19 @@ const getDifficultyConfig = (difficulty) => {
 };
 
 const inputStyle =
-  "w-full py-2 px-3 rounded-lg bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500";
+  "w-full py-2 px-3 rounded-lg bg-slate-700 border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500";
 
 const CreateTest = ({ onClose }) => {
-  // Test details state
   const [testName, setTestName] = useState('');
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState(60);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
 
-  // Questions state
   const [questions, setQuestions] = useState([]);
   const [selectedQuestions, setSelectedQuestions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // ✅ Fetch questions
   useEffect(() => {
     const getQuest = async () => {
       try {
@@ -46,7 +43,6 @@ const CreateTest = ({ onClose }) => {
     getQuest();
   }, []);
 
-  // Filter available questions
   const availableQuestions = useMemo(() => {
     return questions
       .filter(q => !selectedQuestions.some(sq => sq.problem_id === q.problem_id))
@@ -54,31 +50,27 @@ const CreateTest = ({ onClose }) => {
   }, [questions, selectedQuestions, searchTerm]);
 
   const handleAddQuestion = (question) => {
-    setSelectedQuestions([...selectedQuestions, { ...question, points: 10 }]);
+    setSelectedQuestions([...selectedQuestions, question]);
   };
 
   const handleRemoveQuestion = (problem_id) => {
     setSelectedQuestions(selectedQuestions.filter(q => q.problem_id !== problem_id));
   };
 
-  const handlePointsChange = (problem_id, points) => {
-    setSelectedQuestions(selectedQuestions.map(q =>
-      q.problem_id === problem_id
-        ? { ...q, points: parseInt(points, 10) || 0 }
-        : q
-    ));
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Maps to your Java Test Entity
     const testData = {
       testName,
       description,
-      durationMinutes: duration,  // match backend field
+      durationMinutes: parseInt(duration, 10), 
       startTime: startTime ? new Date(startTime).toISOString() : null,
       endTime: endTime ? new Date(endTime).toISOString() : null,
-      questions: selectedQuestions
+      questionIds: selectedQuestions.map(q => q.problem_id), // Array of Integers
+      mcqIds: [] // Array of Integers mapped to entity
     };
+    
     postTests(testData);
     console.log("Creating Test:", testData);
     onClose();
@@ -95,35 +87,32 @@ const CreateTest = ({ onClose }) => {
         </header>
 
         <div className="flex-grow overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Column */}
           <div className="flex flex-col gap-6">
             <h3 className="text-lg font-semibold text-white border-b border-slate-700 pb-2">Test Details</h3>
 
             <div>
-              <label htmlFor="testName" className="block text-sm font-medium text-slate-300 mb-1">Test Name</label>
-              <input id="testName" type="text" value={testName} onChange={(e) => setTestName(e.target.value)} required className={inputStyle} />
+              <label className="block text-sm font-medium text-slate-300 mb-1">Test Name</label>
+              <input type="text" value={testName} onChange={(e) => setTestName(e.target.value)} required className={inputStyle} />
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-1">Description</label>
-              <textarea id="description" rows="3" value={description} onChange={(e) => setDescription(e.target.value)} className={inputStyle}></textarea>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Description</label>
+              <textarea rows="3" value={description} onChange={(e) => setDescription(e.target.value)} className={inputStyle}></textarea>
             </div>
 
             <div>
-              <label htmlFor="duration" className="block text-sm font-medium text-slate-300 mb-1">Duration (minutes)</label>
-              <input id="duration" type="number" value={duration} onChange={(e) => setDuration(e.target.value)} required className={inputStyle} />
+              <label className="block text-sm font-medium text-slate-300 mb-1">Duration (minutes)</label>
+              <input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} required className={inputStyle} />
             </div>
 
-            {/* ⏰ Start Time */}
             <div>
-              <label htmlFor="startTime" className="block text-sm font-medium text-slate-300 mb-1">Start Time</label>
-              <input id="startTime" type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} required className={inputStyle} />
+              <label className="block text-sm font-medium text-slate-300 mb-1">Start Time</label>
+              <input type="datetime-local" value={startTime} onChange={(e) => setStartTime(e.target.value)} required className={inputStyle} />
             </div>
 
-            {/* ⏰ End Time */}
             <div>
-              <label htmlFor="endTime" className="block text-sm font-medium text-slate-300 mb-1">End Time</label>
-              <input id="endTime" type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} required className={inputStyle} />
+              <label className="block text-sm font-medium text-slate-300 mb-1">End Time</label>
+              <input type="datetime-local" value={endTime} onChange={(e) => setEndTime(e.target.value)} required className={inputStyle} />
             </div>
 
             <div className="border-t border-slate-700 pt-4">
@@ -135,10 +124,9 @@ const CreateTest = ({ onClose }) => {
                       <p className="text-sm font-medium text-white">{q.title}</p>
                       <span className={`text-xs capitalize px-2 py-0.5 rounded-full ${getDifficultyConfig(q.difficulty)}`}>{q.difficulty}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <input type="number" value={q.points} onChange={(e) => handlePointsChange(q.problem_id, e.target.value)} className="w-16 text-center bg-slate-600 rounded-md p-1 border border-slate-500" />
-                      <button type="button" onClick={() => handleRemoveQuestion(q.problem_id)} className="text-red-400 hover:text-red-300"><FaTrash /></button>
-                    </div>
+                    <button type="button" onClick={() => handleRemoveQuestion(q.problem_id)} className="text-red-400 hover:text-red-300">
+                      <FaTrash />
+                    </button>
                   </div>
                 ))}
                 {selectedQuestions.length === 0 && (
@@ -148,7 +136,6 @@ const CreateTest = ({ onClose }) => {
             </div>
           </div>
 
-          {/* Right Column */}
           <div className="flex flex-col">
             <h3 className="text-lg font-semibold text-white border-b border-slate-700 pb-2 mb-4">Question Bank</h3>
             <div className="relative mb-4">
@@ -157,7 +144,7 @@ const CreateTest = ({ onClose }) => {
                 placeholder="Search question bank..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full py-2 px-4 pl-10 rounded-lg bg-slate-700 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full py-2 px-4 pl-10 rounded-lg bg-slate-700 border border-slate-600 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             </div>
