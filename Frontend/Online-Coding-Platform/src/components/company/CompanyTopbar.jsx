@@ -1,14 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { FaBell, FaSearch, FaCog, FaQuestionCircle, FaChevronDown } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FaBell, FaCog, FaSignOutAlt, FaChevronDown } from 'react-icons/fa';
 import { RiBuilding4Fill } from 'react-icons/ri';
 
 const CompanyTopbar = () => {
+  const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const loggedUser = JSON.parse(localStorage.getItem('user')) || { username: 'Company' };
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate('/login');
+  };
 
   return (
     <header className="w-full h-16 bg-slate-900/80 backdrop-blur-sm text-white flex items-center px-6 justify-between flex-shrink-0 border-b border-slate-700/50 sticky top-0 z-50">
@@ -18,16 +39,7 @@ const CompanyTopbar = () => {
           Company Dashboard
         </div>
       </div>
-      <div className="hidden lg:flex flex-1 max-w-md mx-4">
-        <div className="relative w-full">
-          <input
-            type="text"
-            placeholder="Search tests, candidates..."
-            className="w-full py-2 px-4 pl-10 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-        </div>
-      </div>
+
       <div className="flex items-center space-x-3 md:space-x-5">
         <div className="hidden sm:flex flex-col items-end text-sm leading-tight">
           <div className="font-medium text-slate-300">
@@ -37,19 +49,49 @@ const CompanyTopbar = () => {
             {currentTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </div>
         </div>
-        <button className="p-2 rounded-full hover:bg-slate-800 transition-colors"><FaQuestionCircle className="text-slate-400" /></button>
-        <button className="p-2 rounded-full hover:bg-slate-800 transition-colors"><FaCog className="text-slate-400" /></button>
-        <div className="relative">
-          <button className="p-2 rounded-full hover:bg-slate-800 transition-colors"><FaBell className="text-slate-400" /></button>
-          <span className="absolute top-0 right-0 bg-indigo-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-semibold">5</span>
-        </div>
-        <div className="flex items-center space-x-2 ml-2 p-2 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer">
-          <RiBuilding4Fill className="text-2xl text-slate-400" />
-          <div className="hidden md:block">
-            <div className="text-sm font-medium text-slate-200">Tech Innovations</div>
-            <div className="text-xs text-slate-500">Company</div>
-          </div>
-          <FaChevronDown className="text-slate-500 text-xs ml-1 hidden md:block" />
+
+        <button
+          onClick={() => navigate('/company/settings')}
+          className="p-2 rounded-full hover:bg-slate-800 transition-colors text-slate-400 hover:text-white cursor-pointer"
+          title="Company Settings"
+        >
+          <FaCog />
+        </button>
+
+        {/* User Profile Dropdown */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="flex items-center space-x-2 ml-2 p-2 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer text-left"
+          >
+            <RiBuilding4Fill className="text-2xl text-indigo-400" />
+            <div className="hidden md:block">
+              <div className="text-sm font-medium text-slate-200">{loggedUser.username}</div>
+              <div className="text-xs text-slate-500 capitalize">{loggedUser.role || 'Company'}</div>
+            </div>
+            <FaChevronDown className="text-slate-500 text-xs ml-1 hidden md:block" />
+          </button>
+
+          {dropdownOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 z-50">
+              <button
+                onClick={() => {
+                  setDropdownOpen(false);
+                  navigate('/company/settings');
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
+              >
+                <FaCog className="text-slate-400" /> Settings
+              </button>
+              <hr className="border-slate-700 my-1" />
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
+              >
+                <FaSignOutAlt className="text-red-400" /> Logout
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

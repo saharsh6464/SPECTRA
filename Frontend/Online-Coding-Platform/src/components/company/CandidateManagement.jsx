@@ -1,46 +1,61 @@
-// src/pages/company/CandidateManagement.jsx
-import React, { useState, useMemo } from 'react';
-import { FaSearch, FaFilter, FaCheckCircle, FaTimesCircle, FaHourglassHalf } from 'react-icons/fa';
-
-// Mock Data for Candidates (replace with an API call)
-const MOCK_CANDIDATES = [
-  { id: 1, name: 'Alice Johnson', email: 'alice.j@example.com', test_taken: 'Senior Frontend Engineer', score: 88, status: 'Passed' },
-  { id: 2, name: 'Bob Williams', email: 'bob.w@example.com', test_taken: 'Senior Frontend Engineer', score: 65, status: 'Failed' },
-  { id: 3, name: 'Charlie Brown', email: 'charlie.b@example.com', test_taken: 'Backend Python Developer', score: 92, status: 'Passed' },
-  { id: 4, name: 'Diana Miller', email: 'diana.m@example.com', test_taken: 'Full-Stack Assessment', score: 75, status: 'Passed' },
-  { id: 5, name: 'Ethan Davis', email: 'ethan.d@example.com', test_taken: 'Backend Python Developer', score: 58, status: 'Failed' },
-  { id: 6, name: 'Fiona Garcia', email: 'fiona.g@example.com', test_taken: 'DevOps Screening', score: null, status: 'In Review' },
-];
-
-const getStatusConfig = (status) => {
-  switch (status) {
-    case 'Passed': return { icon: <FaCheckCircle />, color: 'bg-green-500/10 text-green-400' };
-    case 'Failed': return { icon: <FaTimesCircle />, color: 'bg-red-500/10 text-red-400' };
-    case 'In Review': return { icon: <FaHourglassHalf />, color: 'bg-yellow-500/10 text-yellow-400' };
-    default: return { icon: <FaHourglassHalf />, color: 'bg-slate-500/10 text-slate-400' };
-  }
-};
+import React, { useState, useEffect, useMemo } from 'react';
+import { FaSearch, FaCheckCircle, FaTimesCircle, FaShieldAlt } from 'react-icons/fa';
+import { getTestAttempts } from '../../api/testAttempt';
 
 const CandidateManagement = () => {
-  const [candidates] = useState(MOCK_CANDIDATES);
+  const [attempts, setAttempts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
+  useEffect(() => {
+    const fetchAttempts = async () => {
+      try {
+        setLoading(true);
+        const data = await getTestAttempts();
+        setAttempts(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Error fetching candidate attempts:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAttempts();
+  }, []);
+
   const filteredCandidates = useMemo(() => {
-    return candidates
+    return attempts
+      .map(att => {
+        const username = att.user?.username || `User #${att.user?.id || 'Unknown'}`;
+        const testName = att.test?.testName || `Test #${att.test?.testId || 'N/A'}`;
+        const score = att.totalScore ?? 0;
+        const passed = score >= 50;
+        const status = passed ? 'Passed' : 'Failed';
+        const risk = att.totalRisk ?? 0;
+
+        return {
+          id: att.id,
+          username,
+          testName,
+          score,
+          status,
+          risk,
+        };
+      })
       .filter(c =>
-        c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.email.toLowerCase().includes(searchTerm.toLowerCase())
+        c.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.testName.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .filter(c => statusFilter === 'all' || c.status === statusFilter);
-  }, [candidates, searchTerm, statusFilter]);
+  }, [attempts, searchTerm, statusFilter]);
 
   return (
     <div>
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white">Candidate Management</h1>
-          <p className="text-slate-400">View and manage all candidates who have taken your tests.</p>
+          <h1 className="text-3xl font-bold text-white">Candidate Evaluations</h1>
+          <p className="text-slate-400">Review assessment attempts mapped strictly to TestAttempt models.</p>
         </div>
       </header>
 
@@ -49,63 +64,74 @@ const CandidateManagement = () => {
         <div className="relative w-full md:max-w-xs">
           <input
             type="text"
-            placeholder="Search by name or email..."
+            placeholder="Search by username or test..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full py-2 px-4 pl-10 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full py-2 px-4 pl-10 rounded-lg bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
         </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-full md:w-auto py-2 px-4 rounded-lg bg-slate-800 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full md:w-auto py-2 px-4 rounded-lg bg-slate-800 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
-          <option value="all">All Statuses</option>
+          <option value="all">All Results</option>
           <option value="Passed">Passed</option>
           <option value="Failed">Failed</option>
-          <option value="In Review">In Review</option>
         </select>
       </div>
 
       {/* Candidates List Table */}
       <div className="bg-slate-800/50 rounded-xl shadow-lg border border-slate-700 overflow-x-auto">
-        <div className="min-w-full divide-y divide-slate-700/50">
-          {/* Table Header */}
-          <div className="p-4 hidden md:grid grid-cols-4 gap-4 font-semibold text-slate-400 text-sm">
-            <h3>Candidate</h3>
-            <h3>Test Taken</h3>
-            <h3 className="text-center">Score</h3>
-            <h3 className="text-center">Status</h3>
-          </div>
-          {filteredCandidates.map(candidate => {
-            const status = getStatusConfig(candidate.status);
-            return (
-              <div key={candidate.id} className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4 items-center hover:bg-slate-800 transition-colors duration-200">
+        {loading ? (
+          <div className="p-8 text-center text-slate-400">Loading candidate attempts...</div>
+        ) : (
+          <div className="min-w-full divide-y divide-slate-700/50">
+            {/* Table Header */}
+            <div className="p-4 hidden md:grid grid-cols-5 gap-4 font-semibold text-slate-400 text-sm bg-slate-800/80">
+              <h3 className="col-span-2">Candidate</h3>
+              <h3>Test Taken</h3>
+              <h3 className="text-center">Score</h3>
+              <h3 className="text-center">Security Risk</h3>
+            </div>
+
+            {filteredCandidates.map(candidate => (
+              <div
+                key={candidate.id}
+                className="p-4 grid grid-cols-2 md:grid-cols-5 gap-4 items-center hover:bg-slate-800 transition-colors duration-200"
+              >
                 {/* Candidate Info */}
-                <div className="col-span-2 md:col-span-1">
-                  <h3 className="font-semibold text-white">{candidate.name}</h3>
-                  <p className="text-sm text-slate-400">{candidate.email}</p>
+                <div className="col-span-2 space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-indigo-400">#{candidate.id}</span>
+                    <h3 className="font-semibold text-white">{candidate.username}</h3>
+                  </div>
                 </div>
+
                 {/* Test Taken */}
-                <div className="text-slate-300 text-sm">{candidate.test_taken}</div>
+                <div className="text-slate-300 text-sm">{candidate.testName}</div>
+
                 {/* Score */}
                 <div className="text-center font-bold text-white">
-                  {candidate.score !== null ? `${candidate.score}%` : 'N/A'}
+                  {candidate.score}
                 </div>
-                {/* Status */}
-                <div className="flex justify-center">
-                  <span className={`text-xs font-medium px-3 py-1 rounded-full capitalize flex items-center gap-2 ${status.color}`}>
-                    {status.icon} {candidate.status}
+
+                {/* Risk Score */}
+                <div className="flex items-center justify-center gap-1.5 text-sm">
+                  <FaShieldAlt className={candidate.risk > 0 ? "text-amber-400 text-xs" : "text-emerald-400 text-xs"} />
+                  <span className={candidate.risk > 0 ? "text-amber-400 font-semibold" : "text-emerald-400"}>
+                    {candidate.risk}
                   </span>
                 </div>
               </div>
-            )
-          })}
-        </div>
-        {filteredCandidates.length === 0 && (
+            ))}
+          </div>
+        )}
+
+        {!loading && filteredCandidates.length === 0 && (
           <div className="p-8 text-center text-slate-400">
-            No candidates found.
+            No candidate attempts found.
           </div>
         )}
       </div>
