@@ -1,11 +1,16 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
 import StudentRoutes from './routes/StudentRoutes';
 import CompanyRoutes from './routes/CompanyRoutes';
-import AdminRoutes from './routes/AdminRoutes';
 import './index.css';
 import { ContextProvider } from './context/AuthContext';
-import ProtectedRoute from './security/ProtectedRoute'; // import here
+import ProtectedRoute from './security/ProtectedRoute';
 import AuthPage from './security/login';
+
+const LogoutHandler = () => {
+  localStorage.removeItem("user");
+  return <Navigate to="/login" replace />;
+};
+
 const LandingPage = () => (
   <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white">
     <h1 className="text-4xl font-bold mb-2 text-indigo-400">EduPortal</h1>
@@ -17,9 +22,6 @@ const LandingPage = () => (
       <Link to="/company" className="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors text-center">
         Company Dashboard
       </Link>
-      <Link to="/admin" className="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors text-center">
-        Admin Dashboard
-      </Link>
     </div>
   </div>
 );
@@ -30,9 +32,10 @@ function App() {
       <ContextProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<AuthPage />} />
-      
-          {/* Protect these routes */}
+          <Route path="/login" element={<AuthPage />} />
+          <Route path="/logout" element={<LogoutHandler />} />
+
+          {/* Student routes */}
           <Route
             path="/student/*"
             element={
@@ -41,6 +44,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Company routes */}
           <Route
             path="/company/*"
             element={
@@ -49,14 +54,9 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/admin/*"
-            element={
-              <ProtectedRoute>
-                <AdminRoutes />
-              </ProtectedRoute>
-            }
-          />
+
+          {/* Fallback route */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </ContextProvider>
     </BrowserRouter>

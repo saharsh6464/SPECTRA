@@ -1,75 +1,70 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { FaListOl, FaCheckCircle, FaCode, FaHourglassHalf } from 'react-icons/fa';
+import { FaCheckCircle, FaCode, FaHourglassHalf, FaShieldAlt } from 'react-icons/fa';
 import { useMainContext } from '../../context/AuthContext';
-import { addSubmission } from '../../api/submission';
+import { createTestAttempt } from '../../api/testAttempt';
+import { getTestsByid } from '../../api/test';
+import { getQuestions } from '../../api/question';
 
 const TestAttempt = () => {
   const { testId } = useParams();
   const navigate = useNavigate();
-  const { currentQuestion ,final} = useMainContext(); 
+  const { currentQuestion, setcurrentQuestion, final } = useMainContext();
 
-  // If context is empty, fallback to empty array
-  const problems = currentQuestion || [];
+  const [problems, setProblems] = useState(currentQuestion || []);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  // Assuming duration is stored in localStorage or context; fallback 90 minutes
-  const durationMinutes = Number(localStorage.getItem(`test_${testId}_duration`)) || 90;
+  // Duration in minutes
+  const storedDuration = Number(localStorage.getItem(`test_${testId}_duration`)) || 60;
+  const [timeLeft, setTimeLeft] = useState(storedDuration * 60);
 
-  const [timeLeft, setTimeLeft] = useState(durationMinutes * 60);
+  // If user refreshed during attempt, restore questions from backend
+  useEffect(() => {
+    if (!problems || problems.length === 0) {
+      const restoreTest = async () => {
+        try {
+          const [testRes, allQ] = await Promise.all([
+            getTestsByid(testId),
+            getQuestions(),
+          ]);
+          const qIds = testRes.questionIds || [];
+          const qMap = new Map((allQ || []).map(q => [q.problemId, q]));
+          const restored = qIds.map((id, index) => ({
+            question: qMap.get(id) || { problemId: id, title: `Problem #${id}`, difficulty: 'Medium' },
+            points: 10,
+            orderId: index + 1,
+          }));
+          setProblems(restored);
+          setcurrentQuestion(restored);
+        } catch (e) {
+          console.error("Could not restore test questions:", e);
+        }
+      };
+      restoreTest();
+    }
+  }, [testId, problems, setcurrentQuestion]);
 
-  // Helper to get initial statuses from localStorage
-  const getInitialStatuses = (problems) => {
+  const getInitialStatuses = (items) => {
     const statuses = {};
-    for (const problem of problems) {
-      const storedStatus = localStorage.getItem(`problem_${problem.question.problemId}_status`);
-      statuses[problem.question.problemId] = storedStatus || 'pending';
+    for (const item of items) {
+      const qId = item.question?.problemId;
+      if (qId) {
+        const stored = localStorage.getItem(`problem_${qId}_status`);
+        statuses[qId] = stored || 'pending';
+      }
     }
     return statuses;
   };
 
-  
-  function HandleFinalSubmit() {
-    const LoggedUser = JSON.parse(localStorage.getItem("user")); 
-    if (!LoggedUser) {
-      console.error("No logged-in user found");
-      return;
-    }
-  
-    // ✅ Calculate total score by summing all scores in final
-    const totalScore = Object.values(final).reduce((sum, item) => sum + (item.score || 0), 0);
-  
-    // ✅ Build payload
-    const payload = {
-      username: LoggedUser.username,
-      test: {
-        testId,// make sure you have testId in scope
-      },
-      totalScore: totalScore,
-    };
-    const response = addSubmission(payload);
-    
-    console.log("📦 Final Output from Backend:", response); 
-  }
-
   const [problemStatuses, setProblemStatuses] = useState(() => getInitialStatuses(problems));
 
-  // Timer effect
+  // Sync statuses if problems change
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          // Auto-submit logic
-          navigate('/student/history');
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [navigate]);
+    setProblemStatuses(getInitialStatuses(problems));
+  }, [problems]);
 
-  // Listen for localStorage changes (e.g., from coding interface)
+  // Listen for storage events (when a problem is solved in editor)
   useEffect(() => {
     const handleStorageChange = () => {
       setProblemStatuses(getInitialStatuses(problems));
@@ -77,6 +72,64 @@ const TestAttempt = () => {
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [problems]);
+
+  const handleFinalSubmit = React.useCallback(async () => {
+    if (submitting) return;
+    const loggedUser = JSON.parse(localStorage.getItem("user"));
+    if (!loggedUser || !loggedUser.id) {
+      setError("No logged in user found. Please re-login.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError('');
+
+    try {
+      const totalScore = Object.values(final || {}).reduce((sum, item) => sum + (item.score || 0), 0);
+      const securityViolations = Number(localStorage.getItem(`test_${testId}_violations`)) || 0;
+
+      const payload = {
+        test: {
+          testId: parseInt(testId, 10),
+        },
+        user: {
+          id: loggedUser.id,
+        },
+        totalScore: totalScore,
+        totalRisk: securityViolations,
+      };
+
+      await createTestAttempt(payload);
+
+      problems.forEach(p => {
+        localStorage.removeItem(`problem_${p.question.problemId}_status`);
+      });
+      localStorage.removeItem(`test_${testId}_duration`);
+      localStorage.removeItem(`test_${testId}_violations`);
+
+      navigate('/student/history');
+    } catch (err) {
+      console.error("Failed to submit test attempt:", err);
+      setError("Failed to finalize test attempt. Please try submitting again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [final, navigate, problems, submitting, testId]);
+
+  // Countdown timer
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          handleFinalSubmit();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [handleFinalSubmit]);
 
   const formatTime = (seconds) => {
     const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
@@ -89,15 +142,18 @@ const TestAttempt = () => {
     switch (status) {
       case 'submitted':
         return (
-          <button disabled className="text-sm bg-green-600 text-white px-4 py-1.5 rounded-md font-semibold flex items-center gap-2">
-            <FaCheckCircle /> Submitted
-          </button>
+          <Link
+            to={`/student/attempt/${testId}/problem/${problemId}`}
+            className="text-xs bg-green-600/20 text-green-400 border border-green-500/30 px-3 py-1.5 rounded-md font-semibold flex items-center gap-1.5 hover:bg-green-600/30 transition-colors"
+          >
+            <FaCheckCircle /> Submitted (Review)
+          </Link>
         );
       case 'attempted':
         return (
           <Link
             to={`/student/attempt/${testId}/problem/${problemId}`}
-            className="text-sm bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-1.5 rounded-md font-semibold flex items-center gap-2"
+            className="text-xs bg-yellow-600 hover:bg-yellow-700 text-white px-3.5 py-1.5 rounded-md font-semibold flex items-center gap-1.5 transition-colors"
           >
             <FaHourglassHalf /> Re-attempt
           </Link>
@@ -106,48 +162,89 @@ const TestAttempt = () => {
         return (
           <Link
             to={`/student/attempt/${testId}/problem/${problemId}`}
-            className="text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded-md font-semibold flex items-center gap-2"
+            className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-md font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <FaCode /> Solve Question
+            <FaCode /> Solve Problem
           </Link>
         );
     }
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <header className="flex-shrink-0 p-3 border-b border-slate-700 flex justify-between items-center">
+    <div className="h-full flex flex-col bg-slate-900 text-white">
+      <header className="flex-shrink-0 p-4 border-b border-slate-700/80 bg-slate-800/40 flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-bold text-white">Test in Progress</h1>
-          <p className="text-sm text-slate-400">Attempting Test ID: {testId}</p>
-          {/* Show User ID and Test ID */}
-          <p className="text-xs text-slate-400 mt-1">
-            User ID: {JSON.parse(localStorage.getItem("user"))?.username || "N/A"} | Test ID: {testId}
+          <h1 className="text-xl font-bold text-white">Test Session in Progress</h1>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Test #{testId} • {problems.length} Problems
           </p>
         </div>
+
         <div className="flex items-center gap-4">
-          <span className="text-lg font-mono bg-slate-700 text-white py-1.5 px-3 rounded-lg">{formatTime(timeLeft)}</span>
-          <button onClick={HandleFinalSubmit} className="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-1.5 px-4 rounded-lg text-sm">
-            Finish & Submit Test
+          <span className="text-base font-mono bg-slate-800 border border-slate-700 text-white py-1.5 px-3.5 rounded-lg shadow-inner">
+            ⏳ {formatTime(timeLeft)}
+          </span>
+          <button
+            onClick={handleFinalSubmit}
+            disabled={submitting}
+            className="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2 px-5 rounded-lg text-sm transition-colors cursor-pointer disabled:opacity-50 shadow-md shadow-rose-600/20"
+          >
+            {submitting ? "Finalizing..." : "Finish & Submit Test"}
           </button>
         </div>
       </header>
 
-      <main className="flex-grow overflow-y-auto p-6">
-        <h2 className="text-2xl font-bold text-white mb-4">Problems</h2>
-        <div className="space-y-4">
-          {problems.map((problem, index) => (
-            <div key={problem.question.problemId} className="bg-slate-800/50 p-4 rounded-lg border border-slate-700 flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <span className="text-indigo-400 font-bold text-lg">{index + 1}</span>
-                <h3 className="font-semibold text-white">{problem.question.title}</h3>
+      {error && (
+        <div className="m-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+
+      <main className="flex-grow overflow-y-auto p-6 max-w-5xl mx-auto w-full">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-white">Problems to Solve</h2>
+          <span className="text-xs text-slate-400">
+            Click Solve on any question to open the coding editor.
+          </span>
+        </div>
+
+        <div className="space-y-3">
+          {problems.map((p, index) => {
+            const q = p.question || {};
+            const qId = q.problemId;
+            const status = problemStatuses[qId] || 'pending';
+
+            return (
+              <div
+                key={qId || index}
+                className="bg-slate-800/60 p-4 rounded-xl border border-slate-700/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:border-slate-600 transition-colors"
+              >
+                <div className="flex items-center gap-3.5">
+                  <span className="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 font-bold flex items-center justify-center text-sm border border-indigo-500/30">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <h3 className="font-semibold text-white text-base">{q.title || `Problem #${qId}`}</h3>
+                    <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5">
+                      <span className="capitalize">{q.difficulty || 'Medium'}</span>
+                      {q.timeComplexity && <span>• {q.timeComplexity}</span>}
+                      <span>• {p.points || 10} points</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 self-end sm:self-auto">
+                  {getStatusButton(status, qId)}
+                </div>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-slate-400">{problem.points} points</span>
-                {getStatusButton(problemStatuses[problem.question.problemId], problem.question.problemId)}
-              </div>
+            );
+          })}
+
+          {problems.length === 0 && (
+            <div className="bg-slate-800/40 p-8 rounded-xl border border-slate-700 text-center text-slate-400">
+              No problems found for this test.
             </div>
-          ))}
+          )}
         </div>
       </main>
     </div>

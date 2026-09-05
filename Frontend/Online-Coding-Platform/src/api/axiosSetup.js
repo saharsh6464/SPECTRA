@@ -1,10 +1,14 @@
 import axios from 'axios';
 
-// Create instance
+// Default to local Spring Boot server (port 8080) or custom environment variable
+const baseURL =
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://96vznzfx-8080.inc1.devtunnels.ms/api';
+
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:8080/api', // Replace with your real backend API
-  timeout: 10000,
-  withCredentials: true, // Allow cookies / auth headers to be sent cross-origin
+  baseURL,
+  timeout: 15000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
