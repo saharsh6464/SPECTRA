@@ -27,6 +27,7 @@ public class TestCase {
 
     private String outputFile; // Standardized to camelCase
 
+    private String sampleInputFile; // Standardized to camelCase
     private String sampleOutputFile; // Standardized to camelCase
 
     private boolean isSample; // Fixed type to boolean

@@ -12,7 +12,6 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Submission {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int submissionId;
@@ -30,8 +29,6 @@ public class Submission {
     private String submittedCode; // Standardized to camelCase
 
     private String language; // Standardized to camelCase
-
-    private boolean status;
 
     private Timestamp totalTime; // Standardized to camelCase
 
