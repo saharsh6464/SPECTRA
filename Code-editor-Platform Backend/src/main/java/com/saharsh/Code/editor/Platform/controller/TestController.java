@@ -1,5 +1,6 @@
 package com.saharsh.Code.editor.Platform.controller;
 
+import com.saharsh.Code.editor.Platform.Dto.GenerateMcqRequest;
 import com.saharsh.Code.editor.Platform.model.Test;
 import com.saharsh.Code.editor.Platform.service.TestService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,5 +51,24 @@ public class TestController {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+
+
+    @PostMapping("/{testId}/generate-mcqs")
+    public ResponseEntity<Test> generateMCQsForTest(
+            @PathVariable int testId,
+            @RequestBody GenerateMcqRequest request) {
+
+        try {
+            Test updatedTest = testService.generateAndAttachMCQs(
+                    testId,
+                    request.topic(),
+                    request.difficulty(),
+                    request.count()
+            );
+            return new ResponseEntity<>(updatedTest, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 }

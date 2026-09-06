@@ -49,4 +49,13 @@ public class Test {
 
     @UpdateTimestamp
     private Timestamp updatedAt;
+
+    @Transient
+    private String topic;
+
+    @Transient
+    private String difficulty;
+
+    @Transient
+    private Integer mcqCount;
 }
