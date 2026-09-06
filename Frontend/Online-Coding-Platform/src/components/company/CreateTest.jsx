@@ -21,6 +21,9 @@ const CreateTest = ({ onClose }) => {
   const [testName, setTestName] = useState('');
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState(60);
+  const [topic, setTopic] = useState('');
+  const [difficulty, setDifficulty] = useState('medium');
+  const [mcqCount, setMcqCount] = useState(5);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
 
@@ -88,8 +91,13 @@ const CreateTest = ({ onClose }) => {
     e.preventDefault();
     setError('');
 
-    if (selectedQuestions.length === 0) {
-      setError('Please add at least one question to the test.');
+    if (!topic.trim()) {
+      setError('Please enter a topic for the generated MCQs.');
+      return;
+    }
+
+    if (Number(mcqCount) < 1) {
+      setError('Please generate at least one MCQ.');
       return;
     }
 
@@ -112,6 +120,9 @@ const CreateTest = ({ onClose }) => {
         testName,
         description,
         durationMinutes: parseInt(duration, 10) || 60,
+        topic: topic.trim(),
+        difficulty,
+        mcqCount: parseInt(mcqCount, 10),
         startTime: startTime ? new Date(startTime).toISOString() : new Date().toISOString(),
         endTime: endTime ? new Date(endTime).toISOString() : new Date(Date.now() + (parseInt(duration, 10) || 60) * 60000).toISOString(),
         questionIds: selectedQuestions.map(q => q.problemId),
@@ -217,6 +228,52 @@ const CreateTest = ({ onClose }) => {
                   </select>
                 </div>
               )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">
+                MCQ Topic <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+                required
+                placeholder="e.g. Java collections"
+                className={inputStyle}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  MCQ Difficulty <span className="text-red-400">*</span>
+                </label>
+                <select
+                  value={difficulty}
+                  onChange={(e) => setDifficulty(e.target.value)}
+                  className={inputStyle}
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Number of MCQs <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={mcqCount}
+                  onChange={(e) => setMcqCount(e.target.value)}
+                  required
+                  className={inputStyle}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
