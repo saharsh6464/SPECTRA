@@ -2,6 +2,7 @@ package com.saharsh.Code.editor.Platform.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.saharsh.Code.editor.Platform.Dto.CodeSubmissionRequest;
 import com.saharsh.Code.editor.Platform.Dto.CodeSubmissionResponse;
+import com.saharsh.Code.editor.Platform.model.Question;
 import com.saharsh.Code.editor.Platform.model.TestCase;
 import com.saharsh.Code.editor.Platform.repo.TestCaseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,12 @@ public class QuestionSolveService {
     @Autowired
     private TestCaseRepository testCaseRepository;
 
+    @Autowired
+    private RealtimeInterviewService realtimeInterviewService;
+
+    @Autowired
+    private QuestionService questionService;
+
     private final RestTemplate restTemplate = new RestTemplate();
 
     private final String COMPILER_API_URL =
@@ -29,9 +36,25 @@ public class QuestionSolveService {
         return processExecution(request, true);
     }
 
-
+//    intergrated here calling of  Interview API:))
     public CodeSubmissionResponse submitCode(CodeSubmissionRequest request) {
-        return processExecution(request, false);
+        CodeSubmissionResponse codeResponse =  processExecution(request, false);
+
+        if(codeResponse.getError()==null && codeResponse.getFailed().isEmpty()){
+            Question question = questionService
+                    .getQuestionById(request.getProblemId())
+                    .orElseThrow(() ->
+                            new RuntimeException("Question not found")
+                    );
+
+            Map<String, Object> response = realtimeInterviewService.createRealtimeInterviewSession(question, request.getSubmittedCode(), request.getLanguage());
+            codeResponse.setRealtimeClientSecret((String) response.get("value"));
+            codeResponse.setRealtimeSecretExpiresAt(
+                    ((Number) response.get("expires_at")).longValue()
+            );
+        }
+
+        return codeResponse;
     }
 
     private CodeSubmissionResponse processExecution(
