@@ -4,9 +4,12 @@ import { FaArrowLeft, FaPlay, FaUpload, FaCheckCircle, FaTimesCircle, FaClock, F
 import Editor from "@monaco-editor/react";
 import { FindQuestionById } from "../../api/question";
 import { FindTestCase } from "../../api/Testcase";
-import { addSubmission, runCode } from "../../api/submission";
+import { addSubmission, runCode, submitCodeApi } from "../../api/submission";
 import { useMainContext } from "../../context/AuthContext";
 import SecurityBlocker from "../../security/SecurityBlocker";
+import FloatingInterviewWidget from "./FloatingInterviewWidget";
+
+
 
 const defaultCode = {
   python: `# Write your Python code here
@@ -205,39 +208,51 @@ const CodingInterface = () => {
     }
   };
 
+  const [clientSecret, setClientSecret] = useState(null);
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      const isPassed = testResult ? testResult.passed : true;
-      const score = testResult ? testResult.score : 10;
-
-      // Persist submission to backend model
       const payload = {
-        submittedCode: code,
+        problemId: parseInt(problemId, 10),
         language: language,
-        status: isPassed,
-        score: score,
-        question: { problemId: parseInt(problemId, 10) },
+        submittedCode: code,
       };
 
       try {
-        await addSubmission(payload);
+        const response = await submitCodeApi(payload);
+
+        const passedCases = Array.isArray(response?.passed) ? response.passed : [];
+        const failedCases = Array.isArray(response?.failed) ? response.failed : [];
+        const totalCases = passedCases.length + failedCases.length;
+        const isPassed = !response.error && totalCases > 0 && failedCases.length === 0;
+        const score = totalCases > 0 ? Math.round((passedCases.length / totalCases) * 10) : (isPassed ? 10 : 0);
+
+        // Update state for test attempt
+        setFinal(prev => ({
+          ...prev,
+          [String(problemId)]: {
+            score,
+            passed: isPassed,
+          }
+        }));
+
+        localStorage.setItem(`problem_${problemId}_status`, "submitted");
+        window.dispatchEvent(new Event("storage"));
+
+        if (response?.realtimeClientSecret) {
+          setClientSecret(response.realtimeClientSecret);
+          setOutput("Code submitted successfully. All test cases passed! You can now start the AI Interview.");
+          // Wait for user to finish interview, prevent immediate navigation
+          setIsSubmitting(false);
+          return;
+        }
+
       } catch (err) {
-        console.warn("Could not persist submission record to backend:", err);
+        console.warn("Error calling submit code API:", err);
       }
 
-      // Update state for test attempt
-      setFinal(prev => ({
-        ...prev,
-        [String(problemId)]: {
-          score,
-          passed: isPassed,
-        }
-      }));
-
-      localStorage.setItem(`problem_${problemId}_status`, "submitted");
-      window.dispatchEvent(new Event("storage"));
-
+      // Fallback: If no interview secret, navigate away immediately
       if (testId) {
         navigate(`/student/attempt/${testId}`);
       } else {
@@ -291,13 +306,12 @@ const CodingInterface = () => {
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-white">{combined?.title}</h1>
             <span
-              className={`text-xs font-medium px-3 py-1 rounded-full capitalize ${
-                (combined?.difficulty || '').toLowerCase() === "easy"
+              className={`text-xs font-medium px-3 py-1 rounded-full capitalize ${(combined?.difficulty || '').toLowerCase() === "easy"
                   ? "bg-green-500/10 text-green-400 border border-green-500/20"
                   : (combined?.difficulty || '').toLowerCase() === "medium"
-                  ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
-                  : "bg-red-500/10 text-red-400 border border-red-500/20"
-              }`}
+                    ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
+                    : "bg-red-500/10 text-red-400 border border-red-500/20"
+                }`}
             >
               {combined?.difficulty || "Medium"}
             </span>
@@ -450,13 +464,12 @@ const CodingInterface = () => {
               </div>
               {testResult && (
                 <span
-                  className={`flex items-center gap-1.5 font-semibold px-2.5 py-0.5 rounded-full text-xs ${
-                    testResult.passed
+                  className={`flex items-center gap-1.5 font-semibold px-2.5 py-0.5 rounded-full text-xs ${testResult.passed
                       ? 'bg-green-500/10 text-green-400 border border-green-500/30'
                       : testResult.error
-                      ? 'bg-red-500/10 text-red-400 border border-red-500/30'
-                      : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/30'
-                  }`}
+                        ? 'bg-red-500/10 text-red-400 border border-red-500/30'
+                        : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/30'
+                    }`}
                 >
                   {testResult.passed ? (
                     <>
@@ -503,6 +516,11 @@ const CodingInterface = () => {
           </div>
         </div>
       </div>
+
+      {/* Floating Realtime Interview Widget */}
+      {clientSecret && (
+        <FloatingInterviewWidget clientSecret={clientSecret} />
+      )}
     </div>
   );
 };

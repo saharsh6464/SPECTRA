@@ -42,3 +42,14 @@ export const runCode = async (data) => {
     throw e;
   }
 };
+
+export const submitCodeApi = async (data) => {
+  try {
+    const response = await axiosInstance.post("/submissions/submit", data);
+    console.log("Submit code response:", response.data);
+    return response.data;
+  } catch (e) {
+    console.error("Error occurred while submitting code:", e);
+    throw e;
+  }
+};
