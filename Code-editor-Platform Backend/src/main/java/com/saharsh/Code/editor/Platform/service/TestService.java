@@ -32,6 +32,16 @@ public class TestService {
         return testRepository.findById(id);
     }
 
+    public List<MCQ> getMCQsByTestId(int testId) {
+        Test test = testRepository.findById(testId)
+                .orElseThrow(() -> new RuntimeException("Test not found: " + testId));
+
+        return test.getMcqIds().stream()
+                .map(mcqService::getMCQById)
+                .flatMap(Optional::stream)
+                .toList();
+    }
+
     // Simplified for basic CRUD as requested
     public Test saveTest(Test test) {
 
