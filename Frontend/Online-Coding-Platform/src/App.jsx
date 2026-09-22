@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import StudentRoutes from './routes/StudentRoutes';
 import CompanyRoutes from './routes/CompanyRoutes';
 import './index.css';
@@ -11,27 +11,13 @@ const LogoutHandler = () => {
   return <Navigate to="/login" replace />;
 };
 
-const LandingPage = () => (
-  <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white">
-    <h1 className="text-4xl font-bold mb-2 text-indigo-400">EduPortal</h1>
-    <p className="text-slate-400 mb-8">Select your dashboard view</p>
-    <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-      <Link to="/student" className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors text-center">
-        Student Dashboard
-      </Link>
-      <Link to="/company" className="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors text-center">
-        Company Dashboard
-      </Link>
-    </div>
-  </div>
-);
-
 function App() {
   return (
     <BrowserRouter>
       <ContextProvider>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          {/* Default entry redirects to login */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<AuthPage />} />
           <Route path="/logout" element={<LogoutHandler />} />
 
@@ -56,7 +42,7 @@ function App() {
           />
 
           {/* Fallback route */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </ContextProvider>
     </BrowserRouter>

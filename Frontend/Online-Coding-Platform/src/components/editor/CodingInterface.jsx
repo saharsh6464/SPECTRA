@@ -4,7 +4,7 @@ import { FaArrowLeft, FaPlay, FaUpload, FaCheckCircle, FaTimesCircle, FaClock, F
 import Editor from "@monaco-editor/react";
 import { FindQuestionById } from "../../api/question";
 import { FindTestCase } from "../../api/Testcase";
-import { addSubmission, runCode, submitCodeApi } from "../../api/submission";
+import { runCode, submitCodeApi } from "../../api/submission";
 import { useMainContext } from "../../context/AuthContext";
 import SecurityBlocker from "../../security/SecurityBlocker";
 import FloatingInterviewWidget from "./FloatingInterviewWidget";
