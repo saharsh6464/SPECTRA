@@ -1,4 +1,16 @@
-  export const getCompanyById = async (id) => {
+import axiosInstance from './axiosSetup';
+
+export const getCompanies = async () => {
+  try {
+    const response = await axiosInstance.get('/companies');
+    return response.data;
+  } catch (e) {
+    console.error("Error occurred while fetching companies:", e);
+    throw e;
+  }
+};
+
+export const getCompanyById = async (id) => {
   try {
     const response = await axiosInstance.get(`/companies/${id}`);
     return response.data;

@@ -78,7 +78,7 @@ public class TestService {
             mcq.setCorrectAnswer(dto.correctAnswer());
             System.out.println(dto.question());
             MCQ savedMcq = mcqService.saveMCQ(mcq); // Saves to DB
-
+            System.out.println("MCQ"+mcq.toString());
             generatedMcqIds.add(savedMcq.getMcqId()); // Grabs the generated PK
         }
 

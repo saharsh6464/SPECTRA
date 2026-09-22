@@ -67,6 +67,7 @@ public class UsersController {
 
     @PostMapping("/login")
     public ResponseEntity<Users> login(@RequestBody Users user) {
+        System.out.println("Hiting this apio");
         Users found = repo.findByUsername(user.getUsername());
         if (found != null && found.getPassword().equals(user.getPassword())) {
             return ResponseEntity.ok(found);
