@@ -6,7 +6,6 @@ import { FindQuestionById } from "../../api/question";
 import { FindTestCase } from "../../api/Testcase";
 import { runCode, submitCodeApi } from "../../api/submission";
 import { useMainContext } from "../../context/AuthContext";
-import SecurityBlocker from "../../security/SecurityBlocker";
 import FloatingInterviewWidget from "./FloatingInterviewWidget";
 
 
@@ -241,6 +240,9 @@ const CodingInterface = () => {
         window.dispatchEvent(new Event("storage"));
 
         if (response?.realtimeClientSecret) {
+          if (document.fullscreenElement) {
+            await document.exitFullscreen().catch(() => {});
+          }
           setClientSecret(response.realtimeClientSecret);
           setOutput("Code submitted successfully. All test cases passed! You can now start the AI Interview.");
           // Wait for user to finish interview, prevent immediate navigation
@@ -253,6 +255,9 @@ const CodingInterface = () => {
       }
 
       // Fallback: If no interview secret, navigate away immediately
+      if (document.fullscreenElement) {
+        await document.exitFullscreen().catch(() => {});
+      }
       if (testId) {
         navigate(`/student/attempt/${testId}`);
       } else {
@@ -271,8 +276,6 @@ const CodingInterface = () => {
 
   return (
     <div className="flex flex-col h-screen bg-slate-900 text-white">
-      {testId && <SecurityBlocker testId={testId} />}
-
       {/* Top Header */}
       <header className="flex-shrink-0 px-4 py-2.5 border-b border-slate-700 bg-slate-800/80 flex justify-between items-center">
         <button

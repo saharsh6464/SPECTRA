@@ -5,6 +5,8 @@ import { useMainContext } from '../../context/AuthContext';
 import { createTestAttempt } from '../../api/testAttempt';
 import { getTestsByid } from '../../api/test';
 import { getQuestions } from '../../api/question';
+import { QRCodeCanvas } from 'qrcode.react';
+import SECURITY_CONFIG from '../../config/securityConfig';
 
 const TestAttempt = () => {
   const { testId } = useParams();
@@ -14,6 +16,8 @@ const TestAttempt = () => {
   const [problems, setProblems] = useState(currentQuestion || []);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const loggedUser = JSON.parse(localStorage.getItem("user") || "null");
+  const mobileProctorUrl = `https://td5g7npg-5173.inc1.devtunnels.ms/mobile-proctor?testId=${encodeURIComponent(testId)}&userId=${encodeURIComponent(loggedUser?.id || "")}`;
 
   // Duration in minutes
   const storedDuration = Number(localStorage.getItem(`test_${testId}_duration`)) || 60;
@@ -107,6 +111,9 @@ const TestAttempt = () => {
       localStorage.removeItem(`test_${testId}_duration`);
       localStorage.removeItem(`test_${testId}_violations`);
 
+      if (document.fullscreenElement) {
+        await document.exitFullscreen().catch(() => {});
+      }
       navigate('/student/history');
     } catch (err) {
       console.error("Failed to submit test attempt:", err);
@@ -198,6 +205,16 @@ const TestAttempt = () => {
         <div className="m-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg text-sm">
           {error}
         </div>
+      )}
+
+      {SECURITY_CONFIG.ENABLE_PROCTORING && (
+        <section className="mx-6 mt-4 flex flex-col items-center gap-3 rounded-xl border border-indigo-500/30 bg-indigo-950/30 p-4 text-center sm:flex-row sm:justify-center sm:text-left">
+          <QRCodeCanvas value={mobileProctorUrl} size={112} bgColor="#0f172a" fgColor="#e2e8f0" includeMargin />
+          <div>
+            <h2 className="font-semibold text-white">Link a phone camera</h2>
+            <p className="mt-1 max-w-md text-xs text-slate-400">Scan this code on your phone and keep the camera page open during the test.</p>
+          </div>
+        </section>
       )}
 
       <main className="flex-grow overflow-y-auto p-6 max-w-5xl mx-auto w-full">

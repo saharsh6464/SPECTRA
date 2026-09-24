@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+:root {
+  --neo-blue: #1769ff;
+  --neo-blue-dark: #171717;
+  --neo-yellow: #ffe600;
+  --neo-pink: #ff4fa3;
+  --neo-green: #35e875;
+  --neo-red: #ff4d4d;
+  --neo-paper: #f7f4e8;
+  --neo-ink: #000000;
+  --neo-shadow: 6px 6px 0 var(--neo-ink);
+}
+
 html,
 body,
 #root {
@@ -10,9 +22,112 @@ body,
 }
 
 body {
-  background-color: #0f172a;
-  color: #f8fafc;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--neo-paper);
+  color: #ffffff;
+  font-family: 'Trebuchet MS', Arial, sans-serif;
+  font-stretch: normal;
+  letter-spacing: normal;
+  line-height: 1.45;
   overflow-x: hidden;
+}
+
+/* Shared Neo-Brutalist skin. Existing class names remain intact so behavior and layout logic are unchanged. */
+[class*="bg-slate-950"],
+[class*="bg-slate-900"] { background-color: var(--neo-blue-dark) !important; }
+[class*="bg-slate-800"] { background-color: #2b2b2b !important; }
+[class*="bg-slate-700"] { background-color: #454545 !important; }
+[class*="bg-indigo-"] { background-color: var(--neo-blue) !important; }
+[class*="bg-gradient-to-"] { background-image: none !important; background-color: var(--neo-pink) !important; }
+[class*="bg-rose-"] { background-color: var(--neo-red) !important; }
+[class*="bg-green-"] { background-color: var(--neo-green) !important; }
+[class*="bg-yellow-"] { background-color: var(--neo-yellow) !important; }
+
+[class*="text-slate-300"],
+[class*="text-slate-400"],
+[class*="text-slate-500"],
+[class*="text-slate-600"],
+[class*="text-indigo-"] { color: #ffffff !important; }
+[class*="text-green-"],
+[class*="text-yellow-"],
+[class*="text-amber-"],
+[class*="text-red-"],
+[class*="text-rose-"] { color: #000000 !important; }
+
+[class*="border-slate-"],
+[class*="border-indigo-"],
+[class*="border-rose-"],
+[class*="border-green-"],
+[class*="border-yellow-"],
+[class*="border-red-"] {
+  border-color: var(--neo-ink) !important;
+  border-width: 3px !important;
+}
+
+[class*="rounded-"] { border-radius: 2px !important; }
+[class*="shadow-"] { box-shadow: var(--neo-shadow) !important; }
+[class*="bg-slate-"][class*="border-"] { box-shadow: var(--neo-shadow) !important; }
+
+button,
+[role="button"] {
+  border: 3px solid var(--neo-ink) !important;
+  border-radius: 2px !important;
+  box-shadow: 4px 4px 0 var(--neo-ink) !important;
+  font-family: 'Trebuchet MS', Arial, sans-serif;
+  letter-spacing: normal;
+  line-height: 1.25;
+  text-transform: uppercase;
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+button:hover:not(:disabled),
+[role="button"]:hover:not(:disabled) { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--neo-ink) !important; }
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--neo-ink) !important; }
+button:disabled,
+[role="button"][aria-disabled="true"] { border-color: #000000 !important; opacity: 0.65; }
+
+input,
+textarea,
+select {
+  border: 3px solid var(--neo-ink) !important;
+  border-radius: 2px !important;
+  color: #ffffff !important;
+  box-shadow: 3px 3px 0 var(--neo-ink) !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  background-color: var(--neo-yellow) !important;
+  color: #000000 !important;
+  outline: 3px solid var(--neo-ink) !important;
+  outline-offset: 1px;
+  box-shadow: 3px 3px 0 var(--neo-ink) !important;
+}
+
+input::placeholder,
+textarea::placeholder { color: #f7f4e8 !important; opacity: 1; }
+input:focus::placeholder,
+textarea:focus::placeholder { color: #000000 !important; opacity: 0.7; }
+header { border-bottom: 4px solid var(--neo-ink) !important; }
+
+video:not(.hidden),
+canvas {
+  border: 4px solid var(--neo-ink);
+  border-radius: 2px;
+  box-shadow: 8px 8px 0 var(--neo-ink);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Arial Black', 'Trebuchet MS', Arial, sans-serif;
+  font-stretch: normal;
+  letter-spacing: normal;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 

@@ -17,7 +17,8 @@ public class WebConfig {
                         .allowedOrigins(
                                 "http://localhost:5173",
                                 "http://localhost:5174", // React dev server
-                                "http://localhost:3000" // optional if using different port
+                                "http://localhost:3000", // optional if using different port
+                                "https://td5g7npg-5173.inc1.devtunnels.ms"
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")

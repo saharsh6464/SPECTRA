@@ -1,8 +1,7 @@
 /**
  * Security, Proctoring & Editor Validation Configuration
  * 
- * You can toggle these boolean flags between true and false to control
- * what is allowed during code editing and assessment sessions.
+ * Set ENABLE_PROCTORING to false to disable the complete proctoring system.
  */
 export const SECURITY_CONFIG = {
   // Master switch: Set to false to disable all proctoring, blocking, and warnings completely
