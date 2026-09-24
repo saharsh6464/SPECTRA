@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pydantic
+pydantic-settings
+numpy
+opencv-python
+sqlalchemy
+python-dotenv
+insightface
+onnxruntime
+mediapipe
+ultralytics
+soundfile
+scipy
+supabase

@@ -1,0 +1,18 @@
+# Local Python environment
+.venv/
+__pycache__/
+*.py[cod]
+# python files
+demo_supabase_producer.py
+run_demo.py
+# Runtime data and generated detection artifacts
+data/
+
+# Local test media
+resource/
+demo_resource/
+
+# Local environment variables
+.env
+
+yolov8n.pt
