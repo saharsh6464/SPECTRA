@@ -6,7 +6,7 @@ from typing import Optional
 import json
 import numpy as np
 import cv2
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
@@ -103,6 +103,23 @@ def health():
         "server": "macbook",
         "supabase_configured": supabase.is_configured(),
     }
+
+
+@app.get("/api/v1/risk")
+def risk(
+    request: Request,
+    user_id: str = Query(..., alias="userId"),
+    test_id: str = Query(..., alias="testId"),
+):
+    auth(request)
+    try:
+        return {"risk_percent": supabase.calculate_risk(user_id, test_id)}
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Risk calculation failed: {exc}") from exc
 
 @app.post("/api/v1/enroll")
 async def enroll(request: Request, session_id: str = Form(...), image_file: UploadFile = File(...)):
