@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FaSearch, FaCheckCircle, FaTimesCircle, FaShieldAlt } from 'react-icons/fa';
+import { FaSearch, FaShieldAlt, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { getTestAttempts } from '../../api/testAttempt';
 
 const CandidateManagement = () => {
@@ -7,6 +7,7 @@ const CandidateManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [expandedCandidateId, setExpandedCandidateId] = useState(null);
 
   useEffect(() => {
     const fetchAttempts = async () => {
@@ -25,29 +26,36 @@ const CandidateManagement = () => {
   }, []);
 
   const filteredCandidates = useMemo(() => {
-    return attempts
-      .map(att => {
-        const username = att.user?.username || `User #${att.user?.id || 'Unknown'}`;
-        const testName = att.test?.testName || `Test #${att.test?.testId || 'N/A'}`;
-        const score = att.totalScore ?? 0;
-        const passed = score >= 50;
-        const status = passed ? 'Passed' : 'Failed';
-        const risk = att.totalRisk ?? 0;
+    const grouped = new Map();
 
-        return {
-          id: att.id,
-          username,
-          testName,
-          score,
-          status,
-          risk,
-        };
-      })
-      .filter(c =>
-        c.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.testName.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      .filter(c => statusFilter === 'all' || c.status === statusFilter);
+    attempts.forEach((att) => {
+      const userId = String(att.user?.id ?? att.userId ?? att.username ?? 'unknown');
+      const username = att.user?.username || att.username || `User #${userId}`;
+      const score = att.totalScore ?? 0;
+      const testId = att.test?.testId ?? att.testId ?? att.id;
+      const testName = att.test?.testName || `Test #${testId || 'N/A'}`;
+      const testResult = {
+        id: att.id,
+        testId,
+        testName,
+        score,
+        status: score >= 50 ? 'Passed' : 'Failed',
+        risk: att.totalRisk ?? 0,
+      };
+
+      if (!grouped.has(userId)) {
+        grouped.set(userId, { id: userId, username, tests: [] });
+      }
+      grouped.get(userId).tests.push(testResult);
+    });
+
+    const normalizedSearch = searchTerm.toLowerCase();
+    return Array.from(grouped.values()).filter((candidate) => {
+      const matchesSearch = candidate.username.toLowerCase().includes(normalizedSearch) ||
+        candidate.tests.some((test) => test.testName.toLowerCase().includes(normalizedSearch));
+      const matchesStatus = statusFilter === 'all' || candidate.tests.some((test) => test.status === statusFilter);
+      return matchesSearch && matchesStatus;
+    });
   }, [attempts, searchTerm, statusFilter]);
 
   return (
@@ -97,33 +105,50 @@ const CandidateManagement = () => {
             </div>
 
             {filteredCandidates.map(candidate => (
-              <div
-                key={candidate.id}
-                className="p-4 grid grid-cols-2 md:grid-cols-5 gap-4 items-center hover:bg-slate-800 transition-colors duration-200"
-              >
-                {/* Candidate Info */}
-                <div className="col-span-2 space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-indigo-400">#{candidate.id}</span>
-                    <h3 className="font-semibold text-white">{candidate.username}</h3>
+              <div key={candidate.id} className="border-b border-slate-700/50 last:border-b-0">
+                <button
+                  type="button"
+                  onClick={() => setExpandedCandidateId((current) => current === candidate.id ? null : candidate.id)}
+                  className="w-full p-4 grid grid-cols-2 md:grid-cols-5 gap-4 items-center text-left hover:bg-slate-800 transition-colors duration-200"
+                >
+                  <div className="col-span-2 space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono text-indigo-400">#{candidate.id}</span>
+                      <h3 className="font-semibold text-white">{candidate.username}</h3>
+                    </div>
+                    <span className="text-xs text-slate-400">{candidate.tests.length} test{candidate.tests.length === 1 ? '' : 's'} taken</span>
                   </div>
-                </div>
+                  <div className="text-slate-300 text-sm">Click to view tests</div>
+                  <div className="text-center font-bold text-white">
+                    {candidate.tests.reduce((total, test) => total + Number(test.score || 0), 0)} total
+                  </div>
+                  <div className="flex items-center justify-center gap-2 text-slate-300">
+                    <FaShieldAlt className="text-amber-400 text-xs" />
+                    <span>{candidate.tests.reduce((total, test) => total + Number(test.risk || 0), 0)} risk</span>
+                    {expandedCandidateId === candidate.id ? <FaChevronUp /> : <FaChevronDown />}
+                  </div>
+                </button>
 
-                {/* Test Taken */}
-                <div className="text-slate-300 text-sm">{candidate.testName}</div>
-
-                {/* Score */}
-                <div className="text-center font-bold text-white">
-                  {candidate.score}
-                </div>
-
-                {/* Risk Score */}
-                <div className="flex items-center justify-center gap-1.5 text-sm">
-                  <FaShieldAlt className={candidate.risk > 0 ? "text-amber-400 text-xs" : "text-emerald-400 text-xs"} />
-                  <span className={candidate.risk > 0 ? "text-amber-400 font-semibold" : "text-emerald-400"}>
-                    {candidate.risk}
-                  </span>
-                </div>
+                {expandedCandidateId === candidate.id && (
+                  <div className="mx-4 mb-4 overflow-x-auto border-2 border-black bg-slate-900/60 p-3">
+                    <div className="grid grid-cols-4 gap-3 border-b border-slate-600 pb-2 text-xs font-bold uppercase text-slate-300">
+                      <span>Test</span>
+                      <span className="text-center">Score</span>
+                      <span className="text-center">Status</span>
+                      <span className="text-center">Risk</span>
+                    </div>
+                    {candidate.tests.map((test) => (
+                      <div key={test.id} className="grid grid-cols-4 gap-3 py-3 text-sm text-white">
+                        <span>{test.testName}</span>
+                        <span className="text-center font-bold">{test.score}</span>
+                        <span className={`text-center font-semibold ${test.status === 'Passed' ? 'text-green-400' : 'text-red-400'}`}>
+                          {test.status}
+                        </span>
+                        <span className="text-center">{test.risk}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -5,6 +5,7 @@ import './index.css';
 import { ContextProvider } from './context/AuthContext';
 import ProtectedRoute from './security/ProtectedRoute';
 import AuthPage from './security/login';
+import MobileProctor from './components/editor/MobileProctor';
 
 const LogoutHandler = () => {
   localStorage.removeItem("user");
@@ -20,6 +21,7 @@ function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<AuthPage />} />
           <Route path="/logout" element={<LogoutHandler />} />
+          <Route path="/mobile-proctor" element={<MobileProctor />} />
 
           {/* Student routes */}
           <Route
