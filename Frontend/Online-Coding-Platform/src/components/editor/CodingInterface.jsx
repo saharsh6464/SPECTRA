@@ -186,7 +186,7 @@ const CodingInterface = () => {
       setFinal(prev => ({
         ...prev,
         [String(problemId)]: {
-          score: evalData.score,
+          score: totalCases > 0 ? Math.round((passedCases.length / totalCases) * 100) : 0,
           passed: evalData.passed,
         }
       }));
@@ -212,8 +212,11 @@ const CodingInterface = () => {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      const loggedUser = JSON.parse(localStorage.getItem("user") || "null");
       const payload = {
         problemId: parseInt(problemId, 10),
+        testId: testId ? parseInt(testId, 10) : null,
+        userId: loggedUser?.id ?? null,
         language: language,
         submittedCode: code,
       };
@@ -225,7 +228,7 @@ const CodingInterface = () => {
         const failedCases = Array.isArray(response?.failed) ? response.failed : [];
         const totalCases = passedCases.length + failedCases.length;
         const isPassed = !response.error && totalCases > 0 && failedCases.length === 0;
-        const score = totalCases > 0 ? Math.round((passedCases.length / totalCases) * 10) : (isPassed ? 10 : 0);
+        const score = totalCases > 0 ? Math.round((passedCases.length / totalCases) * 100) : 0;
 
         // Update state for test attempt
         setFinal(prev => ({

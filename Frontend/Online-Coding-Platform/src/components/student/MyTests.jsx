@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FaSearch, FaClock, FaCheckCircle, FaCalendarAlt, FaEye } from 'react-icons/fa';
+import { FaSearch, FaClock, FaCheckCircle, FaCalendarAlt, FaEye, FaLock } from 'react-icons/fa';
 import { getTests } from '../../api/test';
+import { getTestAttempts } from '../../api/testAttempt';
 
 const getStatusConfig = (startTime, endTime) => {
   const now = new Date();
@@ -15,22 +16,39 @@ const getStatusConfig = (startTime, endTime) => {
     return { status: 'Active', icon: <FaClock />, color: 'bg-green-500/10 text-green-400 border border-green-500/20' };
   }
   if (end && now > end) {
-    return { status: 'Completed', icon: <FaCheckCircle />, color: 'bg-blue-500/10 text-blue-400 border border-blue-500/20' };
+    return { status: 'Closed', icon: <FaCheckCircle />, color: 'bg-blue-500/10 text-blue-400 border border-blue-500/20' };
   }
   return { status: 'Active', icon: <FaClock />, color: 'bg-green-500/10 text-green-400 border border-green-500/20' };
 };
 
 const MyTests = () => {
   const [tests, setTests] = useState([]);
+  const [attemptedTestIds, setAttemptedTestIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const fetchTests = async () => {
+    const fetchAll = async () => {
       try {
         setLoading(true);
-        const data = await getTests();
+        const loggedUser = JSON.parse(localStorage.getItem('user') || 'null');
+        const [data, attemptData] = await Promise.all([
+          getTests(),
+          getTestAttempts(),
+        ]);
         setTests(Array.isArray(data) ? data : []);
+
+        // Build a set of testIds that this student has already attempted
+        const attempted = new Set(
+          (Array.isArray(attemptData) ? attemptData : [])
+            .filter(
+              (a) =>
+                (a.user?.id && String(a.user.id) === String(loggedUser?.id)) ||
+                (a.user?.username && a.user.username === loggedUser?.username)
+            )
+            .map((a) => String(a.test?.testId ?? a.testId))
+        );
+        setAttemptedTestIds(attempted);
       } catch (err) {
         console.error("Error fetching tests:", err);
       } finally {
@@ -38,7 +56,7 @@ const MyTests = () => {
       }
     };
 
-    fetchTests();
+    fetchAll();
   }, []);
 
   const filteredTests = useMemo(() => {
@@ -56,8 +74,8 @@ const MyTests = () => {
     <div>
       <header className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-white">All Assessments</h1>
-          <p className="text-slate-400">Review all tests available from companies.</p>
+          <h1 className="text-3xl font-bold text-white">My Assessments</h1>
+          <p className="text-slate-400">All tests assigned to you. Attempted tests cannot be retaken.</p>
         </div>
       </header>
 
@@ -83,6 +101,7 @@ const MyTests = () => {
               const statusConfig = getStatusConfig(test.startTime, test.endTime);
               const duration = test.durationMinutes ? `${test.durationMinutes} mins` : 'N/A';
               const problemCount = test.questionIds?.length || 0;
+              const alreadyAttempted = attemptedTestIds.has(String(test.testId));
 
               return (
                 <Link
@@ -102,7 +121,12 @@ const MyTests = () => {
                         {test.company?.companyName || 'Host Company'} • Duration: {duration} • {problemCount} {problemCount === 1 ? 'problem' : 'problems'}
                       </p>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 flex-wrap justify-end">
+                      {alreadyAttempted && (
+                        <span className="text-xs font-medium px-3 py-1 rounded-full flex items-center gap-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          <FaLock className="text-[10px]" /> Attempted
+                        </span>
+                      )}
                       <span className={`text-xs font-medium px-3 py-1 rounded-full capitalize flex items-center gap-2 ${statusConfig.color}`}>
                         {statusConfig.icon} {statusConfig.status}
                       </span>

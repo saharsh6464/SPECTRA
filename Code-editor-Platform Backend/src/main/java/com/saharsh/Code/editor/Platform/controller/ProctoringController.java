@@ -9,6 +9,7 @@ import org.springframework.web.client.RestClientResponseException;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/proctoring")
@@ -24,10 +25,11 @@ public class ProctoringController {
             @RequestParam(required = false) String testId,
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) String sessionId,
+            @RequestParam(defaultValue = "laptop") String deviceType,
             @RequestPart("image") MultipartFile image) throws IOException {
         String resolvedTestId = resolveTestId(testId, sessionId);
         String resolvedUserId = resolveUserId(userId, sessionId);
-        return ResponseEntity.ok(proctoringService.uploadSnapshot(resolvedTestId, resolvedUserId, image.getBytes()));
+        return ResponseEntity.ok(proctoringService.uploadSnapshot(resolvedTestId, resolvedUserId, deviceType, image.getBytes()));
     }
 
     @PostMapping("/telemetry")
@@ -39,6 +41,27 @@ public class ProctoringController {
         String resolvedTestId = resolveTestId(testId, sessionId);
         String resolvedUserId = resolveUserId(userId, sessionId);
         return ResponseEntity.ok(proctoringService.updateTelemetry(resolvedTestId, resolvedUserId, updates));
+    }
+
+    @GetMapping("/anomalies")
+    public ResponseEntity<Map<String, Object>> getAnomalies(
+            @RequestParam String testId,
+            @RequestParam String userId) {
+        return ResponseEntity.ok(proctoringService.getAnomalyFactors(testId, userId));
+    }
+
+    @GetMapping("/flagged-images")
+    public ResponseEntity<List<Map<String, Object>>> getFlaggedImages(
+            @RequestParam String testId,
+            @RequestParam String userId) {
+        return ResponseEntity.ok(proctoringService.getFlaggedImages(testId, userId));
+    }
+
+    @GetMapping("/phone-status")
+    public ResponseEntity<Map<String, Object>> getPhoneStatus(
+            @RequestParam String testId,
+            @RequestParam String userId) {
+        return ResponseEntity.ok(proctoringService.getLatestPhoneCapture(testId, userId));
     }
 
     @ExceptionHandler(RestClientResponseException.class)

@@ -30,7 +30,14 @@ const TestHistory = () => {
   }, [loggedUser.id, loggedUser.username]);
 
   const filteredHistory = useMemo(() => {
-    return attempts.filter(t => {
+    const uniqueByTest = new Map();
+    attempts.forEach((attempt) => {
+      const testId = attempt.test?.testId ?? attempt.testId ?? attempt.id;
+      const current = uniqueByTest.get(String(testId));
+      if (!current || Number(attempt.id) > Number(current.id)) uniqueByTest.set(String(testId), attempt);
+    });
+
+    return Array.from(uniqueByTest.values()).filter(t => {
       const testName = t.test?.testName || '';
       const companyName = t.test?.company?.companyName || '';
       return (

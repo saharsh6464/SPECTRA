@@ -1,6 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { FaHome, FaClipboardList, FaUsers, FaQuestionCircle, FaCog, FaSignOutAlt } from 'react-icons/fa';
-import { RiTestTubeFill } from 'react-icons/ri';
+import { FaHome, FaClipboardList, FaQuestionCircle, FaCog, FaSignOutAlt } from 'react-icons/fa';
 
 const CompanySidebar = () => {
   const navigate = useNavigate();
@@ -9,8 +8,6 @@ const CompanySidebar = () => {
     { name: 'Dashboard', path: '/company', icon: <FaHome /> },
     { name: 'Tests', path: '/company/tests', icon: <FaClipboardList /> },
     { name: 'Questions', path: '/company/questions', icon: <FaQuestionCircle /> },
-    { name: 'Candidates', path: '/company/candidates', icon: <FaUsers /> },
-    { name: 'Results', path: '/company/results', icon: <RiTestTubeFill /> },
   ];
 
   const handleLogout = () => {
