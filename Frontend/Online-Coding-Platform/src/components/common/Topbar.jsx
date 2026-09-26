@@ -40,7 +40,7 @@ const Topbar = () => {
       {/* Left Section: Branding */}
       <div className="flex items-center space-x-4">
         <div className="text-2xl font-bold text-indigo-400">
-          EduPortal
+          SPECTRA
         </div>
         <div className="hidden md:block text-sm text-slate-400 border-l border-slate-700 pl-4">
           Student Portal

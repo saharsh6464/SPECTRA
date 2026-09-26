@@ -34,7 +34,7 @@ const CompanyTopbar = () => {
   return (
     <header className="w-full h-16 bg-slate-900/80 backdrop-blur-sm text-white flex items-center px-6 justify-between flex-shrink-0 border-b border-slate-700/50 sticky top-0 z-50">
       <div className="flex items-center space-x-4">
-        <div className="text-2xl font-bold text-indigo-400">EduPortal</div>
+        <div className="text-2xl font-bold text-indigo-400">SPECTRA</div>
         <div className="hidden md:block text-sm text-slate-400 border-l border-slate-700 pl-4">
           Company Dashboard
         </div>

@@ -119,7 +119,7 @@ const AuthPage = () => {
     <div className="flex items-center justify-center min-h-screen bg-slate-900 px-4">
       <div className="bg-slate-800 p-8 rounded-xl shadow-xl w-full max-w-md border border-slate-700">
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-indigo-400">EduPortal</h1>
+          <h1 className="text-3xl font-bold text-indigo-400">SPECTRA</h1>
           <p className="text-slate-400 text-sm mt-1">
             {isLogin ? "Sign in to access your dashboard" : "Create a new account"}
           </p>
