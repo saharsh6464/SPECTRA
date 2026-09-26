@@ -33,6 +33,7 @@ public class AiGenerationService {
         // 2. Craft the strict JSON prompt
         String prompt = String.format(
                 "Generate %d multiple choice questions about %s at a %s difficulty level. " +
+                        "I dont want questions to exceed org.postgresql.util.PSQLException: ERROR: value too long for type character varying(255)\n "+
                         "Return ONLY a valid JSON object with a single root key 'mcqs' containing an array of objects. " +
                         "Each object MUST strictly follow this exact schema: " +
                         "{ " +

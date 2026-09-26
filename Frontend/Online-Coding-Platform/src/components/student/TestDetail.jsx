@@ -70,6 +70,11 @@ const TestDetail = () => {
 
   const handleStartTest = () => {
     if (existingAttempt) return;
+
+    console.log("=== [Attempt Test Clicked] Backend Data ===");
+    console.log("[testDetail] Full test object from backend:", testDetail);
+    console.log("[questions] Resolved question list:", questions);
+    console.log("[existingAttempt] Attempt record for this user/test:", existingAttempt);
     // Clear previous problem statuses for fresh attempt
     questions.forEach(p => {
       localStorage.removeItem(`problem_${p.question.problemId}_status`);

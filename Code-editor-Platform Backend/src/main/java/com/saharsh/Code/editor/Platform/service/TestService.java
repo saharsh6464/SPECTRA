@@ -44,9 +44,10 @@ public class TestService {
 
     // Simplified for basic CRUD as requested
     public Test saveTest(Test test) {
-//
-//        List<Integer> newMcqIds = generateAndSaveMCQs(test.getTopic(), test.getDifficulty(), test.getMcqCount());
-//        test.setMcqIds(newMcqIds);
+
+        List<Integer> newMcqIds = generateAndSaveMCQs(test.getTopic(), test.getDifficulty(), test.getMcqCount());
+        test.setMcqIds(newMcqIds);
+        System.out.println(newMcqIds);
         return testRepository.save(test);
     }
 

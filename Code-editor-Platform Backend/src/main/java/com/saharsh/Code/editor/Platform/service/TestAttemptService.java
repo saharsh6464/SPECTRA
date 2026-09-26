@@ -36,7 +36,7 @@ public class TestAttemptService {
     public Integer callRiskApi(int userId, int testId) {
         System.out.println("Call hiting rishab api");
 
-        String url = "https://www3h8jn-8000.inc1.devtunnels.ms/api/v1/risk"
+        String url = "https://96vznzfx-8000.inc1.devtunnels.ms/api/v1/risk"
                 + "?userId=" + userId
                 + "&testId=" + testId;
 
