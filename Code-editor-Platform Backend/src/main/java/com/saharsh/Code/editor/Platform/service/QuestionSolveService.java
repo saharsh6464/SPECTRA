@@ -38,6 +38,7 @@ public class QuestionSolveService {
 
 //    intergrated here calling of  Interview API:))
     public CodeSubmissionResponse submitCode(CodeSubmissionRequest request) {
+        System.out.println("Submitted object"+request.toString());
         CodeSubmissionResponse codeResponse =  processExecution(request, false);
 
         if(codeResponse.getError()==null && codeResponse.getFailed().isEmpty()){
@@ -46,7 +47,7 @@ public class QuestionSolveService {
                     .orElseThrow(() ->
                             new RuntimeException("Question not found")
                     );
-
+//            Map<String, Object> response = new HashMap<>();
             Map<String, Object> response = realtimeInterviewService.createRealtimeInterviewSession(question, request.getSubmittedCode(), request.getLanguage());
             codeResponse.setRealtimeClientSecret((String) response.get("value"));
             codeResponse.setRealtimeSecretExpiresAt(

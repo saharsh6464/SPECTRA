@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { uploadProctoringSnapshot } from "../api/proctoringApi";
 
-export default function useWebcamCapture({ sessionId, userId, videoConstraints = true }) {
+export default function useWebcamCapture({ sessionId, userId, deviceType = "laptop", videoConstraints = true }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const [isActive, setIsActive] = useState(false);
@@ -29,7 +29,7 @@ export default function useWebcamCapture({ sessionId, userId, videoConstraints =
         if (blob && !disposed && !uploadInFlight) {
           uploadInFlight = true;
           setUploadStatus("Uploading snapshot...");
-          void uploadProctoringSnapshot(sessionId, userId, blob).catch((error) => {
+          void uploadProctoringSnapshot(sessionId, userId, deviceType, blob).catch((error) => {
             setUploadStatus(`Upload failed (${error.status || "network"}): ${error.message}`);
             console.warn(
               "Could not upload proctoring snapshot:",
@@ -70,7 +70,7 @@ export default function useWebcamCapture({ sessionId, userId, videoConstraints =
       if (videoElement) videoElement.srcObject = null;
       setIsActive(false);
     };
-  }, [sessionId, userId, videoConstraints]);
+  }, [deviceType, sessionId, userId, videoConstraints]);
 
   return { videoRef, isActive, permissionError, uploadStatus };
 }

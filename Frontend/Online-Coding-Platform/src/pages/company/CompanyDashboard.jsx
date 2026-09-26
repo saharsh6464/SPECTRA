@@ -27,7 +27,8 @@ const CompanyDashboard = () => {
         getTestAttempts()
       ]);
 
-      const tests = testsRes.status === 'fulfilled' && Array.isArray(testsRes.value) ? testsRes.value : [];
+      const allTests = testsRes.status === 'fulfilled' && Array.isArray(testsRes.value) ? testsRes.value : [];
+      const tests = allTests;
       const attempts = attemptsRes.status === 'fulfilled' && Array.isArray(attemptsRes.value) ? attemptsRes.value : [];
 
       const now = new Date();

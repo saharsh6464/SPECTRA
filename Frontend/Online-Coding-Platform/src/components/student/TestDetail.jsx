@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FaClock, FaListOl, FaArrowLeft, FaPlayCircle, FaCheckCircle } from 'react-icons/fa';
 import { getTestsByid } from '../../api/test';
 import { getQuestions } from '../../api/question';
+import { getTestAttempts } from '../../api/testAttempt';
 import { useMainContext } from '../../context/AuthContext';
 
 const TestDetail = () => {
@@ -13,15 +14,24 @@ const TestDetail = () => {
   const [loading, setLoading] = useState(true);
   const [questions, setQuestions] = useState([]);
   const [error, setError] = useState('');
+  const [existingAttempt, setExistingAttempt] = useState(null);
 
   useEffect(() => {
     const fetchDetails = async () => {
       try {
         setLoading(true);
-        const [testRes, allQuestions] = await Promise.all([
+        const [testRes, allQuestions, attemptData] = await Promise.all([
           getTestsByid(testId),
           getQuestions(),
+          getTestAttempts(),
         ]);
+
+        const loggedUser = JSON.parse(localStorage.getItem('user') || 'null');
+        const attempt = (Array.isArray(attemptData) ? attemptData : []).find((item) =>
+          String(item.test?.testId ?? item.testId) === String(testId) &&
+          (String(item.user?.id ?? item.userId) === String(loggedUser?.id) || item.user?.username === loggedUser?.username)
+        );
+        setExistingAttempt(attempt || null);
 
         setTestDetails(testRes);
 
@@ -59,6 +69,7 @@ const TestDetail = () => {
   }, [testId, setTestDetails]);
 
   const handleStartTest = () => {
+    if (existingAttempt) return;
     // Clear previous problem statuses for fresh attempt
     questions.forEach(p => {
       localStorage.removeItem(`problem_${p.question.problemId}_status`);
@@ -152,12 +163,19 @@ const TestDetail = () => {
       </div>
 
       <div className="max-w-2xl">
-        <button
-          onClick={handleStartTest}
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 px-8 rounded-xl text-lg flex items-center justify-center gap-3 cursor-pointer shadow-lg shadow-green-600/20 transition-colors"
-        >
-          <FaPlayCircle /> Start Test Session
-        </button>
+        {existingAttempt ? (
+          <div className="border-4 border-black bg-[var(--neo-red)] p-4 text-center font-bold text-black shadow-[6px_6px_0_0_#000]">
+            You have already attempted this test. Retakes are not allowed.
+            <div className="mt-2 text-sm">Recorded score: {existingAttempt.totalScore ?? 0}%</div>
+          </div>
+        ) : (
+          <button
+            onClick={handleStartTest}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 px-8 rounded-xl text-lg flex items-center justify-center gap-3 cursor-pointer shadow-lg shadow-green-600/20 transition-colors"
+          >
+            <FaPlayCircle /> Start Test Session
+          </button>
+        )}
       </div>
     </div>
   );

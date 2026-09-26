@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FaCheckCircle, FaCode, FaHourglassHalf, FaShieldAlt } from 'react-icons/fa';
 import { useMainContext } from '../../context/AuthContext';
-import { createTestAttempt } from '../../api/testAttempt';
+import { createTestAttempt, getTestAttempts } from '../../api/testAttempt';
 import { getTestsByid } from '../../api/test';
 import { getQuestions } from '../../api/question';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -16,6 +16,10 @@ const TestAttempt = () => {
   const [problems, setProblems] = useState(currentQuestion || []);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
+  // attemptChecked: null = checking, false = not yet checked, true = allowed in
+  const [attemptChecked, setAttemptChecked] = useState(false);
+
   const loggedUser = JSON.parse(localStorage.getItem("user") || "null");
   const mobileProctorUrl = `https://td5g7npg-5173.inc1.devtunnels.ms/mobile-proctor?testId=${encodeURIComponent(testId)}&userId=${encodeURIComponent(loggedUser?.id || "")}`;
 
@@ -23,7 +27,41 @@ const TestAttempt = () => {
   const storedDuration = Number(localStorage.getItem(`test_${testId}_duration`)) || 60;
   const [timeLeft, setTimeLeft] = useState(storedDuration * 60);
 
-  // If user refreshed during attempt, restore questions from backend
+  // ── Guard: if the student has already submitted this test, redirect away ──
+  useEffect(() => {
+    const checkExistingAttempt = async () => {
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      if (!user?.id) {
+        // No user logged in – let them reach the page (auth guard will handle it)
+        setAttemptChecked(true);
+        return;
+      }
+      try {
+        const attempts = await getTestAttempts();
+        const existing = (Array.isArray(attempts) ? attempts : []).some(
+          (attempt) =>
+            String(attempt.test?.testId ?? attempt.testId) === String(testId) &&
+            (
+              String(attempt.user?.id ?? attempt.userId) === String(user.id) ||
+              attempt.user?.username === user.username
+            )
+        );
+        if (existing) {
+          // Already attempted – send to history and block access
+          navigate('/student/history', { replace: true });
+          return;
+        }
+      } catch (checkError) {
+        console.error("Could not verify existing test attempt:", checkError);
+        // On error, allow in — don't block the student due to a network hiccup
+      }
+      setAttemptChecked(true);
+    };
+
+    void checkExistingAttempt();
+  }, [navigate, testId]);
+
+  // ── Restore questions on refresh ──
   useEffect(() => {
     if (!problems || problems.length === 0) {
       const restoreTest = async () => {
@@ -79,8 +117,8 @@ const TestAttempt = () => {
 
   const handleFinalSubmit = React.useCallback(async () => {
     if (submitting) return;
-    const loggedUser = JSON.parse(localStorage.getItem("user"));
-    if (!loggedUser || !loggedUser.id) {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user || !user.id) {
       setError("No logged in user found. Please re-login.");
       return;
     }
@@ -89,7 +127,12 @@ const TestAttempt = () => {
     setError('');
 
     try {
-      const totalScore = Object.values(final || {}).reduce((sum, item) => sum + (item.score || 0), 0);
+      const questionScores = Object.values(final || {})
+        .map((item) => Number(item.score))
+        .filter((score) => Number.isFinite(score));
+      const totalScore = questionScores.length > 0
+        ? Math.round(questionScores.reduce((sum, score) => sum + score, 0) / questionScores.length)
+        : 0;
       const securityViolations = Number(localStorage.getItem(`test_${testId}_violations`)) || 0;
 
       const payload = {
@@ -97,7 +140,7 @@ const TestAttempt = () => {
           testId: parseInt(testId, 10),
         },
         user: {
-          id: loggedUser.id,
+          id: user.id,
         },
         totalScore: totalScore,
         totalRisk: securityViolations,
@@ -145,6 +188,9 @@ const TestAttempt = () => {
     return `${h}:${m}:${s}`;
   };
 
+  // Status buttons: during an active attempt "submitted" and "attempted" still
+  // allow navigating to the editor within the same session — the lock only
+  // applies when trying to *start* the entire test again from TestDetail.
   const getStatusButton = (status, problemId) => {
     switch (status) {
       case 'submitted':
@@ -177,6 +223,15 @@ const TestAttempt = () => {
     }
   };
 
+  // Show a loading spinner while we verify the existing-attempt check
+  if (!attemptChecked) {
+    return (
+      <div className="h-full flex items-center justify-center bg-slate-900 text-slate-400">
+        Verifying access...
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col bg-slate-900 text-white">
       <header className="flex-shrink-0 p-4 border-b border-slate-700/80 bg-slate-800/40 flex justify-between items-center">
@@ -192,7 +247,7 @@ const TestAttempt = () => {
             ⏳ {formatTime(timeLeft)}
           </span>
           <button
-            onClick={handleFinalSubmit}
+            onClick={() => setConfirmSubmit(true)}
             disabled={submitting}
             className="bg-rose-600 hover:bg-rose-700 text-white font-semibold py-2 px-5 rounded-lg text-sm transition-colors cursor-pointer disabled:opacity-50 shadow-md shadow-rose-600/20"
           >
@@ -204,6 +259,19 @@ const TestAttempt = () => {
       {error && (
         <div className="m-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg text-sm">
           {error}
+        </div>
+      )}
+
+      {confirmSubmit && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 p-6">
+          <div className="max-w-md border-4 border-black bg-[var(--neo-yellow)] p-6 text-black shadow-[8px_8px_0_0_#000]">
+            <h2 className="text-xl font-bold">Submit test?</h2>
+            <p className="mt-3 text-sm font-semibold">Are you sure you want to finish and submit? You cannot undo this action.</p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={() => setConfirmSubmit(false)} className="bg-white px-4 py-2 text-black">Cancel</button>
+              <button type="button" onClick={() => { setConfirmSubmit(false); void handleFinalSubmit(); }} className="bg-[var(--neo-red)] px-4 py-2 text-black">Submit Test</button>
+            </div>
+          </div>
         </div>
       )}
 

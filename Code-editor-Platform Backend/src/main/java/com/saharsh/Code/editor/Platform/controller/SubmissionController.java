@@ -34,6 +34,7 @@ public class SubmissionController {
     // Hit this for submitting code against all main test cases
     @PostMapping("/submit")
     public ResponseEntity<CodeSubmissionResponse> submitCode(@RequestBody CodeSubmissionRequest request) {
+        System.out.println(request.toString());
         CodeSubmissionResponse result = questionSolveService.submitCode(request);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }

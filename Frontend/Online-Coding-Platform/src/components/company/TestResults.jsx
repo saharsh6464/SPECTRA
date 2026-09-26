@@ -24,14 +24,23 @@ const TestResults = () => {
   }, []);
 
   const filteredAttempts = useMemo(() => {
-    return attempts.filter(a => {
+    const uniqueAttempts = new Map();
+    attempts.forEach((attempt) => {
+      const userId = attempt.user?.id ?? attempt.userId ?? 'unknown';
+      const testId = attempt.test?.testId ?? attempt.testId ?? 'unknown';
+      const key = `${userId}-${testId}`;
+      const current = uniqueAttempts.get(key);
+      if (!current || Number(attempt.id) > Number(current.id)) uniqueAttempts.set(key, attempt);
+    });
+
+    return [...uniqueAttempts.values()].filter(a => {
       const candidateName = a.user?.username || '';
       const testName = a.test?.testName || '';
       return (
         candidateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         testName.toLowerCase().includes(searchTerm.toLowerCase())
       );
-    });
+    }).sort((first, second) => (Number(second.totalScore) || 0) - (Number(first.totalScore) || 0));
   }, [attempts, searchTerm]);
 
   return (
@@ -75,9 +84,11 @@ const TestResults = () => {
               const score = attempt.totalScore ?? 0;
               const risk = attempt.totalRisk ?? 0;
 
+              const riskOpacity = Math.min(0.72, 0.04 + (Math.max(0, Number(risk)) / 100) * 0.68);
               return (
                 <div
                   key={attempt.id}
+                  style={{ background: `linear-gradient(90deg, rgba(239, 68, 68, 0), rgba(239, 68, 68, ${riskOpacity}))` }}
                   className="p-4 grid grid-cols-2 md:grid-cols-5 gap-4 items-center hover:bg-slate-800 transition-colors duration-200"
                 >
                   <div className="col-span-2 space-y-0.5">

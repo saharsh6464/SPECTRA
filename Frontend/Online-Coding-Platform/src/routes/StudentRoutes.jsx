@@ -2,7 +2,6 @@ import { Route, Routes, Navigate } from "react-router-dom";
 import StudentLayout from "../layouts/StudentLayout";
 import Dashboard from "../pages/student/Dashboard";
 import MyTests from "../components/student/MyTests";
-import UpcomingTests from "../components/student/UpcomingTests";
 import TestDetail from "../components/student/TestDetail";
 import StudentResultDetail from "../components/student/StudentResultDetail";
 import TestHistory from "../components/student/TestHistory";
@@ -17,12 +16,12 @@ const StudentRoutes = () => {
       <Route element={<StudentLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="tests" element={<MyTests />} />
-        <Route path="upcoming" element={<UpcomingTests />} />
+        <Route path="upcoming" element={<Navigate to="/student/tests" replace />} />
         <Route path="tests/:testId" element={<TestDetail />} />
         <Route path="questions" element={<QuestionBank />} />
         {/* Backward-compatibility aliases */}
         <Route path="resources" element={<Navigate to="/student/questions" replace />} />
-        <Route path="results" element={<Navigate to="/student/upcoming" replace />} />
+        <Route path="results" element={<Navigate to="/student/tests" replace />} />
         <Route path="history" element={<TestHistory />} />
         <Route path="results/:attemptId" element={<StudentResultDetail />} />
       </Route>

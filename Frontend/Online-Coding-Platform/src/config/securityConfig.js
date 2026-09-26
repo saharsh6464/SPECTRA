@@ -5,7 +5,7 @@
  */
 export const SECURITY_CONFIG = {
   // Master switch: Set to false to disable all proctoring, blocking, and warnings completely
-  ENABLE_PROCTORING: false,
+  ENABLE_PROCTORING: true,
 
   // Copy & Paste: Set to true to allow Ctrl+C, Ctrl+V, Ctrl+X in the editor
   ALLOW_COPY_PASTE: true,

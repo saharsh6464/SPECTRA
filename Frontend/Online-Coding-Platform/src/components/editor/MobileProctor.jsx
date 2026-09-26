@@ -12,6 +12,7 @@ const MobileProctor = () => {
   const { videoRef, isActive, permissionError, uploadStatus } = useWebcamCapture({
     sessionId,
     userId,
+    deviceType: "phone",
     videoConstraints: PHONE_VIDEO_CONSTRAINTS,
   });
 

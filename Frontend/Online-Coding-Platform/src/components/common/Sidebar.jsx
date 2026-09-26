@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { FaHome, FaLaptopCode, FaClock, FaHistory, FaSignOutAlt, FaBookOpen } from 'react-icons/fa';
+import { FaHome, FaLaptopCode, FaHistory, FaSignOutAlt, FaBookOpen } from 'react-icons/fa';
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -7,7 +7,6 @@ const Sidebar = () => {
   const navItems = [
     { name: 'Dashboard', path: '/student', icon: <FaHome /> },
     { name: 'My Tests', path: '/student/tests', icon: <FaLaptopCode /> },
-    { name: 'Upcoming Tests', path: '/student/upcoming', icon: <FaClock /> },
     { name: 'Question Bank', path: '/student/questions', icon: <FaBookOpen /> },
     { name: 'Test History', path: '/student/history', icon: <FaHistory /> },
   ];
