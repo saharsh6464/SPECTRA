@@ -34,7 +34,7 @@ const TestAttempt = () => {
   const [attemptChecked, setAttemptChecked] = useState(false);
 
   const loggedUser = JSON.parse(localStorage.getItem("user") || "null");
-  const mobileProctorUrl = `https://td5g7npg-5173.inc1.devtunnels.ms/mobile-proctor?testId=${encodeURIComponent(testId)}&userId=${encodeURIComponent(loggedUser?.id || "")}`;
+  const mobileProctorUrl = `https://nlgl6544-5173.inc1.devtunnels.ms/mobile-proctor?testId=${encodeURIComponent(testId)}&userId=${encodeURIComponent(loggedUser?.id || "")}`;
 
   // Compute remaining seconds from deadline timestamp — survives component remounts
   const [timeLeft, setTimeLeft] = useState(() => {

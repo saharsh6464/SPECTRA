@@ -28,7 +28,7 @@ const ProctoringSession = ({ children }) => {
   // without needing to be re-registered every time examStarted changes.
   const examStartedRef = useRef(false);
 
-  const mobileProctorUrl = `https://td5g7npg-5173.inc1.devtunnels.ms/mobile-proctor?testId=${encodeURIComponent(testId || "")}&userId=${encodeURIComponent(userId || "")}`;
+  const mobileProctorUrl = `https://nlgl6544-5173.inc1.devtunnels.ms/mobile-proctor?testId=${encodeURIComponent(testId || "")}&userId=${encodeURIComponent(userId || "")}`;
   const captureSessionId = examStarted ? sessionId : null;
 
   const handleViolation = useCallback((eventType, metadata) => {
@@ -136,6 +136,7 @@ const ProctoringSession = ({ children }) => {
       examStartedRef.current = true;
       setExamStarted(true);
       setIsFullscreen(true);
+      setWindowAway(false);
       setFullscreenSeconds(30);
       setWarning("");
     } catch {

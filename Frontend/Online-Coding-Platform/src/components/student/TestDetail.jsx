@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { FaClock, FaListOl, FaArrowLeft, FaPlayCircle, FaCheckCircle } from 'react-icons/fa';
+import { QRCodeCanvas } from 'qrcode.react';
 import { getTestsByid } from '../../api/test';
 import { getQuestions } from '../../api/question';
 import { getTestAttempts } from '../../api/testAttempt';
+import { getPhoneStatus } from '../../api/proctoringApi';
 import { useMainContext } from '../../context/AuthContext';
+import SECURITY_CONFIG from '../../config/securityConfig';
 
 const TestDetail = () => {
   const { testId } = useParams();
@@ -15,6 +18,12 @@ const TestDetail = () => {
   const [questions, setQuestions] = useState([]);
   const [error, setError] = useState('');
   const [existingAttempt, setExistingAttempt] = useState(null);
+  const [startingTest, setStartingTest] = useState(false);
+  const [permissionError, setPermissionError] = useState('');
+  const [phoneConnected, setPhoneConnected] = useState(false);
+  const [phoneSeen, setPhoneSeen] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const mobileProctorUrl = `https://nlgl6544-5173.inc1.devtunnels.ms/mobile-proctor?testId=${encodeURIComponent(testId)}&userId=${encodeURIComponent(userId || '')}`;
 
   useEffect(() => {
     const fetchDetails = async () => {
@@ -27,6 +36,7 @@ const TestDetail = () => {
         ]);
 
         const loggedUser = JSON.parse(localStorage.getItem('user') || 'null');
+        setUserId(loggedUser?.id ? String(loggedUser.id) : null);
         const attempt = (Array.isArray(attemptData) ? attemptData : []).find((item) =>
           String(item.test?.testId ?? item.testId) === String(testId) &&
           (String(item.user?.id ?? item.userId) === String(loggedUser?.id) || item.user?.username === loggedUser?.username)
@@ -68,8 +78,62 @@ const TestDetail = () => {
     fetchDetails();
   }, [testId, setTestDetails]);
 
-  const handleStartTest = () => {
-    if (existingAttempt) return;
+  useEffect(() => {
+    if (!SECURITY_CONFIG.ENABLE_PROCTORING || !testId || !userId) return undefined;
+    let disposed = false;
+
+    const checkPhone = async () => {
+      try {
+        const latest = await getPhoneStatus(testId, userId);
+        const timestamp = latest?.created_at ? new Date(latest.created_at).getTime() : 0;
+        if (!disposed) {
+          setPhoneConnected(Boolean(timestamp && Date.now() - timestamp <= 12000));
+          if (timestamp) setPhoneSeen(true);
+        }
+      } catch (phoneError) {
+        console.warn('Could not check phone proctor status:', phoneError.message);
+      }
+    };
+
+    void checkPhone();
+    const phoneTimer = window.setInterval(checkPhone, 5000);
+    return () => {
+      disposed = true;
+      window.clearInterval(phoneTimer);
+    };
+  }, [testId, userId]);
+
+  const handleStartTest = async () => {
+    if (existingAttempt || startingTest || (SECURITY_CONFIG.ENABLE_PROCTORING && !phoneConnected)) return;
+
+    setStartingTest(true);
+    setPermissionError('');
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      const requiredDevices = SECURITY_CONFIG.ENABLE_PROCTORING ? 'camera and microphone' : 'microphone';
+      setPermissionError(`This browser does not support ${requiredDevices} access required for the test.`);
+      setStartingTest(false);
+      return;
+    }
+
+    const requiredDevices = SECURITY_CONFIG.ENABLE_PROCTORING ? 'camera and microphone' : 'microphone';
+    let mediaStream;
+
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        ...(SECURITY_CONFIG.ENABLE_PROCTORING ? { video: true } : {}),
+      });
+    } catch (reason) {
+      const detail = reason?.name === 'NotAllowedError' || reason?.name === 'PermissionDeniedError'
+        ? 'Allow access in your browser settings and try again.'
+        : reason?.message || 'Check that the devices are connected and available.';
+      setPermissionError(`${requiredDevices} access is required before starting the test. ${detail}`);
+      return;
+    } finally {
+      mediaStream?.getTracks().forEach((track) => track.stop());
+      setStartingTest(false);
+    }
 
     console.log("=== [Attempt Test Clicked] Backend Data ===");
     console.log("[testDetail] Full test object from backend:", testDetail);
@@ -156,7 +220,11 @@ const TestDetail = () => {
           </li>
           <li className="flex items-start gap-2">
             <FaCheckCircle className="text-indigo-400 text-xs mt-1 flex-shrink-0" />
-            <span>The assessment timer starts immediately when you click <strong>Start Test</strong>.</span>
+            <span>Allow {SECURITY_CONFIG.ENABLE_PROCTORING ? 'camera and microphone' : 'microphone'} access when prompted before the timed test begins.</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <FaCheckCircle className="text-indigo-400 text-xs mt-1 flex-shrink-0" />
+            <span>The assessment timer starts after required device permissions are granted and the test opens.</span>
           </li>
           <li className="flex items-start gap-2">
             <FaCheckCircle className="text-indigo-400 text-xs mt-1 flex-shrink-0" />
@@ -169,7 +237,29 @@ const TestDetail = () => {
         </ul>
       </div>
 
+      {SECURITY_CONFIG.ENABLE_PROCTORING && (
+        <section className="mb-8 flex max-w-2xl flex-col items-center gap-4 rounded-xl border border-indigo-500/30 bg-indigo-950/30 p-5 text-center sm:flex-row sm:text-left">
+          <QRCodeCanvas value={mobileProctorUrl} size={128} bgColor="#0f172a" fgColor="#e2e8f0" includeMargin />
+          <div>
+            <h2 className="font-semibold text-white">Set up your phone camera</h2>
+            <p className="mt-1 text-sm text-slate-300">Scan this code and allow camera access on your phone before starting the timed test.</p>
+            <p className="mt-2 text-xs text-slate-400">
+              {phoneConnected
+                ? 'Phone camera connected. You can start the test.'
+                : phoneSeen
+                  ? 'Phone camera disconnected. Reopen the QR page to continue.'
+                  : 'Waiting for phone camera access...'}
+            </p>
+          </div>
+        </section>
+      )}
+
       <div className="max-w-2xl">
+        {permissionError && (
+          <p role="alert" className="mb-4 rounded-lg border border-red-500/40 bg-red-950/40 p-3 text-sm text-red-300">
+            {permissionError}
+          </p>
+        )}
         {existingAttempt ? (
           <div className="border-4 border-black bg-[var(--neo-red)] p-4 text-center font-bold text-black shadow-[6px_6px_0_0_#000]">
             You have already attempted this test. Retakes are not allowed.
@@ -178,9 +268,14 @@ const TestDetail = () => {
         ) : (
           <button
             onClick={handleStartTest}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 px-8 rounded-xl text-lg flex items-center justify-center gap-3 cursor-pointer shadow-lg shadow-green-600/20 transition-colors"
+            disabled={startingTest || (SECURITY_CONFIG.ENABLE_PROCTORING && !phoneConnected)}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 px-8 rounded-xl text-lg flex items-center justify-center gap-3 cursor-pointer shadow-lg shadow-green-600/20 transition-colors disabled:cursor-wait disabled:opacity-60"
           >
-            <FaPlayCircle /> Start Test Session
+            <FaPlayCircle /> {startingTest
+              ? 'Checking device permissions...'
+              : SECURITY_CONFIG.ENABLE_PROCTORING && !phoneConnected
+                ? 'Connect phone camera to start'
+                : 'Start Test Session'}
           </button>
         )}
       </div>
