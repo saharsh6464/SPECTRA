@@ -81,7 +81,9 @@ const TestDetail = () => {
     });
 
     if (testDetail.durationMinutes) {
-      localStorage.setItem(`test_${testDetail.testId}_duration`, testDetail.durationMinutes);
+      // Store a deadline timestamp so the timer survives navigation remounts
+      const deadlineMs = Date.now() + testDetail.durationMinutes * 60 * 1000;
+      localStorage.setItem(`test_${testDetail.testId}_deadline`, String(deadlineMs));
     }
 
     setcurrentQuestion(questions);

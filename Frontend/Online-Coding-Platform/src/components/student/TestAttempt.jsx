@@ -36,9 +36,17 @@ const TestAttempt = () => {
   const loggedUser = JSON.parse(localStorage.getItem("user") || "null");
   const mobileProctorUrl = `https://td5g7npg-5173.inc1.devtunnels.ms/mobile-proctor?testId=${encodeURIComponent(testId)}&userId=${encodeURIComponent(loggedUser?.id || "")}`;
 
-  // Duration in minutes
-  const storedDuration = Number(localStorage.getItem(`test_${testId}_duration`)) || 60;
-  const [timeLeft, setTimeLeft] = useState(storedDuration * 60);
+  // Compute remaining seconds from deadline timestamp — survives component remounts
+  const [timeLeft, setTimeLeft] = useState(() => {
+    const deadline = Number(localStorage.getItem(`test_${testId}_deadline`));
+    if (deadline) {
+      const remaining = Math.max(0, Math.round((deadline - Date.now()) / 1000));
+      return remaining;
+    }
+    // Fallback for legacy duration key (first mount before deadline is set)
+    const storedDuration = Number(localStorage.getItem(`test_${testId}_duration`)) || 60;
+    return storedDuration * 60;
+  });
 
   // ── Guard: if the student has already submitted this test, redirect away ──
   useEffect(() => {
@@ -198,6 +206,7 @@ const TestAttempt = () => {
         localStorage.removeItem(`problem_${p.question.problemId}_status`);
       });
       localStorage.removeItem(`test_${testId}_duration`);
+      localStorage.removeItem(`test_${testId}_deadline`);
       localStorage.removeItem(`test_${testId}_violations`);
       localStorage.removeItem(`test_${testId}_mcq_answers`);
 

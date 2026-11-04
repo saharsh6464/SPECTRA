@@ -24,6 +24,9 @@ const ProctoringSession = ({ children }) => {
   const [autoFailed, setAutoFailed] = useState(false);
   const [windowAway, setWindowAway] = useState(false);
   const warningTimer = useRef(null);
+  // Ref mirror of examStarted so event listeners always read the latest value
+  // without needing to be re-registered every time examStarted changes.
+  const examStartedRef = useRef(false);
 
   const mobileProctorUrl = `https://td5g7npg-5173.inc1.devtunnels.ms/mobile-proctor?testId=${encodeURIComponent(testId || "")}&userId=${encodeURIComponent(userId || "")}`;
   const captureSessionId = examStarted ? sessionId : null;
@@ -72,25 +75,27 @@ const ProctoringSession = ({ children }) => {
     const handleFullscreenChange = () => {
       const active = Boolean(document.fullscreenElement);
       setIsFullscreen(active);
-      if (!active && examStarted) {
+      // Read ref so this listener never needs to be re-registered
+      if (!active && examStartedRef.current) {
         setFullscreenSeconds(30);
         setWarning("Fullscreen exited. Return within 30 seconds or the test will fail.");
       }
     };
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, [examStarted, sessionId]);
+    // examStarted intentionally NOT in deps — use ref to avoid re-registration on nav
+  }, [sessionId]);
 
   useEffect(() => {
     if (!sessionId) return undefined;
     const handleAway = () => {
-      if (examStarted) {
+      if (examStartedRef.current) {
         setWindowAway(true);
         setWarning("Window focus was lost. Return to the test and resume fullscreen.");
       }
     };
     const handleReturn = () => {
-      if (!document.hidden && examStarted) setWindowAway(false);
+      if (!document.hidden && examStartedRef.current) setWindowAway(false);
     };
     window.addEventListener("blur", handleAway);
     document.addEventListener("visibilitychange", handleReturn);
@@ -98,7 +103,8 @@ const ProctoringSession = ({ children }) => {
       window.removeEventListener("blur", handleAway);
       document.removeEventListener("visibilitychange", handleReturn);
     };
-  }, [examStarted, sessionId]);
+    // examStarted intentionally NOT in deps — use ref to avoid re-registration on nav
+  }, [sessionId]);
 
   useEffect(() => {
     if (!examStarted || isFullscreen || autoFailed) return undefined;
@@ -127,6 +133,7 @@ const ProctoringSession = ({ children }) => {
     }
     try {
       await document.documentElement.requestFullscreen();
+      examStartedRef.current = true;
       setExamStarted(true);
       setIsFullscreen(true);
       setFullscreenSeconds(30);

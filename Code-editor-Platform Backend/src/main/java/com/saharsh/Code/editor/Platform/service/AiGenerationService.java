@@ -13,7 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Service
+// Disabled until AI-generated MCQs are enabled again.
+// @Service
 public class AiGenerationService {
 
     @Value("${openai.api.key}")
